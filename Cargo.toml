@@ -15,6 +15,8 @@ tokio = { version = "1.53.1", features = ["full"] }
 # HTTP client and browser emulation use upstream's renumbered stable release pair.
 wreq = { version = "0.16.1", features = ["json", "socks", "gzip", "brotli", "zstd", "deflate", "stream"] }
 wreq-util = { version = "0.2.0", features = ["emulation-serde", "emulation-compression"] }
+# Inspect the existing TLS backend's typed errors instead of matching error text.
+btls = { version = "0.5.6", default-features = false }
 futures-util = "0.3.34"
 
 # Web Framework
