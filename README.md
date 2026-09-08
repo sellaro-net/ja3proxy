@@ -25,17 +25,17 @@
 <table>
 <tr>
 <td width="33%" valign="top">
-<h3><a href="docs/usage.md">Usage guide ↗</a></h3>
+<h3><a href="docs/usage.md">Usage guide</a></h3>
 <p>From your first request to proxy routing, cookie sessions and cancellation.</p>
 <a href="docs/usage.md"><strong>Explore the workflows →</strong></a>
 </td>
 <td width="33%" valign="top">
-<h3><a href="docs/api.md">API reference ↗</a></h3>
+<h3><a href="docs/api.md">API reference</a></h3>
 <p>Endpoints, binary framing, request fields and terminal diagnostics.</p>
 <a href="docs/api.md"><strong>Build your integration →</strong></a>
 </td>
 <td width="33%" valign="top">
-<h3><a href="docs/configuration.md">Configuration ↗</a></h3>
+<h3><a href="docs/configuration.md">Configuration</a></h3>
 <p>Service secrets, resource limits and private container deployments.</p>
 <a href="docs/configuration.md"><strong>Configure your instance →</strong></a>
 </td>
