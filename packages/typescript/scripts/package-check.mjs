@@ -9,6 +9,8 @@ import { artifactDirectory, artifactPath, assertPackagePolicy, assertReleaseCont
 
 const release = process.argv.includes('--release');
 const existing = process.argv.includes('--existing');
+const restoreDist = process.argv.includes('--restore-dist');
+assert.ok(!restoreDist || existing, 'Restore requires an existing validated artifact.');
 assertPackagePolicy(manifest);
 if (release) assertReleaseContext();
 await mkdir(artifactDirectory, { recursive: true });
@@ -66,6 +68,12 @@ try {
   const { messages } = await publint({ pkgDir: unpacked, level: 'suggestion' });
   assert.deepEqual(messages, [], `publint rejected package: ${JSON.stringify(messages)}`);
   runNode(join(dirname(require.resolve('@arethetypeswrong/cli/package.json')), 'dist/index.js'), [artifactPath, '--profile', 'node16', '--no-emoji']);
+  if (restoreDist) {
+    // Source regressions import dist directly. Use the validated release bytes,
+    // never a second build or leftover output from another source revision.
+    await rm(join(packageDirectory, 'dist'), { recursive: true, force: true });
+    await cp(join(unpacked, 'dist'), join(packageDirectory, 'dist'), { recursive: true });
+  }
   await writeFile(`${artifactPath}.sha256`, `${sha256}  ${basename(artifactPath)}\n`);
   console.log(`Validated packed artifact: ${basename(artifactPath)} (SHA-256 ${sha256})`);
 } finally {
