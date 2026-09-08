@@ -3,6 +3,12 @@
 debug/
 release/
 
+# TypeScript workspace artifacts
+node_modules/
+packages/typescript/dist/
+packages/typescript/artifacts/
+*.tsbuildinfo
+
 # Cargo
 **/*.rs.bk
 

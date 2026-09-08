@@ -1,0 +1,112 @@
+name: SDK quality
+
+on:
+  pull_request:
+    paths:
+      - 'packages/typescript/**'
+      - 'contracts/**'
+      - 'src/**'
+      - 'vendor/**'
+      - 'Cargo.*'
+      - 'rust-toolchain.toml'
+      - 'Dockerfile'
+      - '.dockerignore'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - '.npmrc'
+      - '.node-version'
+      - '.github/workflows/sdk-*.yml'
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sdk-quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  package:
+    name: Package / ${{ matrix.os }} / Node ${{ matrix.node }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        node: ['22.14.0', '24.18.0']
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
+      - name: Install pinned workspace manager
+        run: npm install --global pnpm@11.15.1 --ignore-scripts --no-audit --no-fund
+      - name: Install locked development dependencies without lifecycle scripts
+        run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Check generated TypeScript and Rust parity fixtures
+        run: pnpm --filter @sellaro/ja3proxy contracts:check
+      - name: Check strict types
+        run: pnpm sdk:typecheck
+      - name: Build both public formats and worker artifacts
+        run: pnpm sdk:build
+      - name: Check packed allowlist, publint and declaration resolution on build Node
+        run: pnpm sdk:pack
+      - name: Select supported consumer runtime after building
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: ${{ matrix.node }}
+          package-manager-cache: false
+      - name: Run SDK behavioral regressions
+        run: pnpm sdk:test
+      - name: Check SDK request semantics against Rust contract fixtures
+        run: pnpm --filter @sellaro/ja3proxy test:contracts
+      - name: Install actual tarball and exercise ESM/CJS consumers and workers
+        run: pnpm sdk:consumers
+
+  rust-interop:
+    name: Rust contract and packed SDK interop
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
+      - name: Install pinned workspace manager
+        run: npm install --global pnpm@11.15.1 --ignore-scripts --no-audit --no-fund
+      - name: Install locked development dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Check known dependency vulnerabilities
+        run: pnpm audit --audit-level low
+      - name: Check Rust tests and actual DTO schema drift with the pinned native toolchain
+        run: docker build --target rust-check .
+      - name: Build and validate SDK tarball
+        run: pnpm sdk:typecheck && pnpm sdk:build && pnpm sdk:pack
+      - name: Build current real Rust service without publishing
+        run: docker build --tag ja3proxy-sdk-ci .
+      - name: Exercise installed ESM/CJS SDK against actual Rust service
+        shell: bash
+        run: |
+          set -euo pipefail
+          container="ja3proxy-sdk-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          cleanup() { docker logs "$container" || true; docker rm -f "$container" >/dev/null 2>&1 || true; }
+          trap cleanup EXIT
+          export JA3_PROXY_TOKEN
+          JA3_PROXY_TOKEN=$(openssl rand -hex 32)
+          docker run --detach --name "$container" --network host \
+            --read-only --cap-drop ALL --security-opt no-new-privileges \
+            --tmpfs /tmp:rw,noexec,nosuid,size=16m \
+            --env JA3_PROXY_TOKEN --env PORT=18992 --env ALLOW_PRIVATE_IPS=true ja3proxy-sdk-ci
+          export JA3_PROXY_URL=http://127.0.0.1:18992
+          export JA3_SMOKE_ORIGIN_HOST=127.0.0.1
+          curl --fail --silent --show-error --retry 30 --retry-delay 1 --retry-connrefused --max-time 2 "$JA3_PROXY_URL/health"
+          pnpm --filter @sellaro/ja3proxy check:consumers --interop

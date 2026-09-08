@@ -10,6 +10,7 @@ use super::{ContextLimits, invalid};
 use crate::error::{ErrorCode, TransportError};
 
 #[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema-export", derive(schemars::JsonSchema))]
 pub enum CookieSameSite {
     Strict,
     Lax,
@@ -17,6 +18,7 @@ pub enum CookieSameSite {
 }
 
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema-export", derive(schemars::JsonSchema))]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct CookieRecord {
     pub name: String,
@@ -34,13 +36,15 @@ pub struct CookieRecord {
 }
 
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema-export", derive(schemars::JsonSchema))]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct CookieSnapshot {
     pub partition_key: String,
     pub cookies: Vec<CookieRecord>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
+#[cfg_attr(feature = "schema-export", derive(schemars::JsonSchema))]
 #[serde(
     tag = "operation",
     rename_all = "lowercase",
@@ -79,7 +83,8 @@ impl CookieCommand {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "schema-export", derive(schemars::JsonSchema))]
 #[serde(rename_all = "camelCase")]
 pub struct CookieReply {
     pub revision: u64,

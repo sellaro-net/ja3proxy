@@ -1,0 +1,205 @@
+{
+  "$id": "https://ja3proxy.invalid/contracts/requestStatus.schema.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "Delivery": {
+      "enum": [
+        "not_started",
+        "possibly_sent",
+        "response_started"
+      ],
+      "type": "string"
+    },
+    "Diagnostics": {
+      "properties": {
+        "attempt": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "bodyMs": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "clientReused": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "contextId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "cookieRevision": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "delivery": {
+          "$ref": "#/definitions/Delivery"
+        },
+        "headersMs": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "phase": {
+          "$ref": "#/definitions/Phase"
+        },
+        "queueMs": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "requestBytes": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "requestId": {
+          "type": "string"
+        },
+        "responseBytes": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "tlsProfile": {
+          "type": "string"
+        },
+        "totalMs": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "traceId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "requestId",
+        "attempt",
+        "phase",
+        "delivery",
+        "queueMs",
+        "headersMs",
+        "bodyMs",
+        "totalMs",
+        "requestBytes",
+        "responseBytes",
+        "tlsProfile"
+      ],
+      "type": "object"
+    },
+    "ErrorCode": {
+      "enum": [
+        "UNAUTHORIZED",
+        "INVALID_REQUEST",
+        "UNSUPPORTED_CAPABILITY",
+        "INVALID_PROFILE",
+        "EGRESS_REQUIRED",
+        "SSRF_BLOCKED",
+        "BODY_TOO_LARGE",
+        "BUSY",
+        "TIMEOUT",
+        "CANCELLED",
+        "DNS_ERROR",
+        "PROXY_ERROR",
+        "TLS_ERROR",
+        "CONNECT_ERROR",
+        "PROTOCOL_ERROR",
+        "CONTEXT_NOT_FOUND",
+        "CONTEXT_CONFLICT",
+        "CONTEXT_LIMIT",
+        "COOKIE_LIMIT",
+        "DUPLICATE_REQUEST",
+        "UNKNOWN"
+      ],
+      "type": "string"
+    },
+    "Phase": {
+      "enum": [
+        "queued",
+        "preparing",
+        "upstream",
+        "body",
+        "complete"
+      ],
+      "type": "string"
+    },
+    "RequestState": {
+      "enum": [
+        "queued",
+        "active",
+        "complete",
+        "failed"
+      ],
+      "type": "string"
+    },
+    "TransportError": {
+      "properties": {
+        "code": {
+          "$ref": "#/definitions/ErrorCode"
+        },
+        "diagnostics": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Diagnostics"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "type": "object"
+    }
+  },
+  "properties": {
+    "diagnostics": {
+      "$ref": "#/definitions/Diagnostics"
+    },
+    "error": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/TransportError"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "state": {
+      "$ref": "#/definitions/RequestState"
+    }
+  },
+  "required": [
+    "state",
+    "diagnostics"
+  ],
+  "title": "RequestStatus",
+  "type": "object"
+}

@@ -1,0 +1,20 @@
+{
+  "name": "ja3proxy-workspace",
+  "private": true,
+  "license": "UNLICENSED",
+  "packageManager": "pnpm@11.15.1",
+  "engines": {
+    "node": ">=22.14.0"
+  },
+  "scripts": {
+    "contracts:export": "cargo run --locked --features schema-export --bin ja3proxy -- --export-contracts contracts",
+    "contracts:generate": "pnpm contracts:export && pnpm --filter @sellaro/ja3proxy contracts:generate",
+    "contracts:check": "cargo run --locked --features schema-export --bin ja3proxy -- --export-contracts contracts --check && pnpm --filter @sellaro/ja3proxy contracts:check",
+    "sdk:build": "pnpm --filter @sellaro/ja3proxy build",
+    "sdk:typecheck": "pnpm --filter @sellaro/ja3proxy typecheck",
+    "sdk:test": "pnpm --filter @sellaro/ja3proxy test",
+    "sdk:pack": "pnpm --filter @sellaro/ja3proxy pack:checked",
+    "sdk:consumers": "pnpm --filter @sellaro/ja3proxy check:consumers",
+    "sdk:interop": "pnpm --filter @sellaro/ja3proxy smoke:interop"
+  }
+}

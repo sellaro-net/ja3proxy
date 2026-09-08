@@ -1,0 +1,71 @@
+{
+  "$id": "https://ja3proxy.invalid/contracts/cookieRecord.schema.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "definitions": {
+    "CookieSameSite": {
+      "enum": [
+        "Strict",
+        "Lax",
+        "None"
+      ],
+      "type": "string"
+    }
+  },
+  "properties": {
+    "domain": {
+      "type": "string"
+    },
+    "expiresAtMs": {
+      "format": "uint64",
+      "minimum": 0,
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "hostOnly": {
+      "type": "boolean"
+    },
+    "httpOnly": {
+      "type": "boolean"
+    },
+    "name": {
+      "type": "string"
+    },
+    "partitioned": {
+      "type": "boolean"
+    },
+    "path": {
+      "type": "string"
+    },
+    "sameSite": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/CookieSameSite"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "secure": {
+      "type": "boolean"
+    },
+    "value": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "value",
+    "domain",
+    "path",
+    "secure",
+    "httpOnly",
+    "hostOnly",
+    "partitioned"
+  ],
+  "title": "CookieRecord",
+  "type": "object"
+}

@@ -110,7 +110,7 @@ impl Config {
         Ok(config)
     }
 
-    #[cfg(test)]
+    #[cfg(any(test, feature = "schema-export"))]
     pub fn for_test() -> Self {
         Self {
             port: 0,

@@ -1,0 +1,119 @@
+{
+  "$id": "https://ja3proxy.invalid/contracts/createContext.schema.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "definitions": {
+    "BrowserIdentity": {
+      "additionalProperties": false,
+      "properties": {
+        "emulateHeaders": {
+          "type": "boolean"
+        },
+        "tlsProfile": {
+          "type": "string"
+        },
+        "userAgent": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "tlsProfile",
+        "emulateHeaders"
+      ],
+      "type": "object"
+    },
+    "ConnectionSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "egress": {
+          "$ref": "#/definitions/Egress"
+        },
+        "identity": {
+          "$ref": "#/definitions/BrowserIdentity"
+        }
+      },
+      "required": [
+        "egress",
+        "identity"
+      ],
+      "type": "object"
+    },
+    "CookieMode": {
+      "enum": [
+        "external",
+        "managed"
+      ],
+      "type": "string"
+    },
+    "Egress": {
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "const": "direct",
+              "type": "string"
+            }
+          },
+          "required": [
+            "mode"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "const": "proxy",
+              "type": "string"
+            },
+            "url": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "mode",
+            "url"
+          ],
+          "type": "object"
+        }
+      ]
+    }
+  },
+  "properties": {
+    "allowedOrigins": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "connection": {
+      "$ref": "#/definitions/ConnectionSpec"
+    },
+    "cookieMode": {
+      "$ref": "#/definitions/CookieMode"
+    },
+    "partition": {
+      "type": "string"
+    },
+    "ttlMs": {
+      "format": "uint64",
+      "minimum": 0,
+      "type": [
+        "integer",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "partition",
+    "connection",
+    "cookieMode",
+    "allowedOrigins"
+  ],
+  "title": "CreateContext",
+  "type": "object"
+}

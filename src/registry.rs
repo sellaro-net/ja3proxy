@@ -4,7 +4,7 @@ use crate::{
     models::{Diagnostics, Phase},
 };
 use parking_lot::Mutex;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
     sync::Arc,
@@ -14,10 +14,21 @@ use tokio_util::sync::CancellationToken;
 
 type Key = (String, String, String);
 
-#[derive(Clone, Serialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema-export", derive(schemars::JsonSchema))]
+#[serde(rename_all = "lowercase")]
+pub enum RequestState {
+    Queued,
+    Active,
+    Complete,
+    Failed,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema-export", derive(schemars::JsonSchema))]
 #[serde(rename_all = "camelCase")]
 pub struct RequestStatus {
-    pub state: &'static str,
+    pub state: RequestState,
     pub diagnostics: Diagnostics,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<TransportError>,
@@ -72,13 +83,13 @@ impl RequestRecord {
     fn status_locked(progress: &Progress) -> RequestStatus {
         RequestStatus {
             state: if progress.error.is_some() {
-                "failed"
+                RequestState::Failed
             } else if progress.finished.is_some() {
-                "complete"
+                RequestState::Complete
             } else if progress.diagnostics.phase == Phase::Queued {
-                "queued"
+                RequestState::Queued
             } else {
-                "active"
+                RequestState::Active
             },
             diagnostics: progress.diagnostics.clone(),
             error: progress.error.clone(),
@@ -296,21 +307,21 @@ mod tests {
         drop(response);
         assert!(record.cancel.is_cancelled());
         let status = record.status();
-        assert_eq!(status.state, "active");
+        assert_eq!(status.state, RequestState::Active);
         assert_eq!(status.diagnostics.delivery, Delivery::NotStarted);
         assert!(status.error.is_none());
 
         resume.send(()).unwrap();
         dispatching.await.unwrap();
         let status = record.status();
-        assert_eq!(status.state, "active");
+        assert_eq!(status.state, RequestState::Active);
         assert_eq!(status.diagnostics.delivery, Delivery::PossiblySent);
         assert!(status.error.is_none());
 
         stop.send(()).unwrap();
         worker.await.unwrap();
         let status = record.status();
-        assert_eq!(status.state, "failed");
+        assert_eq!(status.state, RequestState::Failed);
         assert_eq!(status.diagnostics.delivery, Delivery::PossiblySent);
         let error = status.error.unwrap();
         assert_eq!(error.code, ErrorCode::Cancelled);
@@ -332,7 +343,7 @@ mod tests {
         worker.abort();
         assert!(worker.await.unwrap_err().is_cancelled());
         let status = record.status();
-        assert_eq!(status.state, "failed");
+        assert_eq!(status.state, RequestState::Failed);
         assert_eq!(status.diagnostics.delivery, Delivery::NotStarted);
         assert_eq!(status.error.unwrap().code, ErrorCode::Cancelled);
     }

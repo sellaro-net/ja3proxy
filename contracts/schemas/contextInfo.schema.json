@@ -1,0 +1,69 @@
+{
+  "$id": "https://ja3proxy.invalid/contracts/contextInfo.schema.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "BrowserIdentity": {
+      "additionalProperties": false,
+      "properties": {
+        "emulateHeaders": {
+          "type": "boolean"
+        },
+        "tlsProfile": {
+          "type": "string"
+        },
+        "userAgent": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "tlsProfile",
+        "emulateHeaders"
+      ],
+      "type": "object"
+    },
+    "CookieMode": {
+      "enum": [
+        "external",
+        "managed"
+      ],
+      "type": "string"
+    }
+  },
+  "properties": {
+    "contextId": {
+      "type": "string"
+    },
+    "cookieMode": {
+      "$ref": "#/definitions/CookieMode"
+    },
+    "expiresAtMs": {
+      "format": "uint64",
+      "minimum": 0,
+      "type": "integer"
+    },
+    "identity": {
+      "$ref": "#/definitions/BrowserIdentity"
+    },
+    "partition": {
+      "type": "string"
+    },
+    "revision": {
+      "format": "uint64",
+      "minimum": 0,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "contextId",
+    "partition",
+    "expiresAtMs",
+    "revision",
+    "cookieMode",
+    "identity"
+  ],
+  "title": "ContextInfo",
+  "type": "object"
+}

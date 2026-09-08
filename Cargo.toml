@@ -8,6 +8,10 @@ authors = ["Lukas"]
 repository = "https://github.com/sellaro-net/ja3proxy"
 readme = "README.md"
 
+[features]
+# Schema generation is opt-in; production builds do not link Schemars.
+schema-export = ["dep:schemars"]
+
 [dependencies]
 # Runtime
 tokio = { version = "1.53.1", features = ["full"] }
@@ -36,6 +40,7 @@ axum = { version = "0.8.9", features = ["json"] }
 # Serialization
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.151"
+schemars = { version = "=1.2.2", optional = true }
 
 # URL parsing for SSRF protection
 url = "2.5.8"

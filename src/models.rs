@@ -3,6 +3,7 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Deserialize, Serialize)]
+#[cfg_attr(feature = "schema-export", derive(schemars::JsonSchema))]
 #[serde(tag = "mode", rename_all = "lowercase", deny_unknown_fields)]
 pub enum Egress {
     Direct,
@@ -10,6 +11,7 @@ pub enum Egress {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[cfg_attr(feature = "schema-export", derive(schemars::JsonSchema))]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct BrowserIdentity {
     pub tls_profile: String,
@@ -19,13 +21,15 @@ pub struct BrowserIdentity {
 }
 
 #[derive(Clone, Deserialize, Serialize)]
+#[cfg_attr(feature = "schema-export", derive(schemars::JsonSchema))]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct ConnectionSpec {
     pub egress: Egress,
     pub identity: BrowserIdentity,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
+#[cfg_attr(feature = "schema-export", derive(schemars::JsonSchema))]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct RequestMetadata {
     pub request_id: String,
@@ -46,6 +50,7 @@ pub struct RequestMetadata {
 }
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[cfg_attr(feature = "schema-export", derive(schemars::JsonSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum Phase {
     Queued,
@@ -56,6 +61,7 @@ pub enum Phase {
 }
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[cfg_attr(feature = "schema-export", derive(schemars::JsonSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum Delivery {
     NotStarted,
@@ -64,6 +70,7 @@ pub enum Delivery {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema-export", derive(schemars::JsonSchema))]
 #[serde(rename_all = "camelCase")]
 pub struct Diagnostics {
     pub request_id: String,
@@ -87,7 +94,8 @@ pub struct Diagnostics {
     pub cookie_revision: Option<u64>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "schema-export", derive(schemars::JsonSchema))]
 #[serde(rename_all = "camelCase")]
 pub struct ResponseMetadata {
     pub request_id: String,
@@ -99,6 +107,7 @@ pub struct ResponseMetadata {
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[cfg_attr(feature = "schema-export", derive(schemars::JsonSchema))]
 #[serde(rename_all = "lowercase")]
 pub enum CookieMode {
     External,
@@ -106,6 +115,7 @@ pub enum CookieMode {
 }
 
 #[derive(Clone, Deserialize, Serialize)]
+#[cfg_attr(feature = "schema-export", derive(schemars::JsonSchema))]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct CreateContext {
     pub partition: String,
@@ -117,6 +127,7 @@ pub struct CreateContext {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema-export", derive(schemars::JsonSchema))]
 #[serde(rename_all = "camelCase")]
 pub struct ContextInfo {
     pub context_id: String,
@@ -125,6 +136,82 @@ pub struct ContextInfo {
     pub revision: u64,
     pub cookie_mode: CookieMode,
     pub identity: BrowserIdentity,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema-export", derive(schemars::JsonSchema))]
+#[serde(rename_all = "camelCase")]
+pub struct HeaderDescriptor {
+    pub tls_profile: String,
+    pub headers: Vec<(String, String)>,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema-export", derive(schemars::JsonSchema))]
+pub enum ServiceName {
+    #[serde(rename = "ja3proxy")]
+    Ja3Proxy,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema-export", derive(schemars::JsonSchema))]
+#[serde(rename_all = "camelCase")]
+pub struct Capabilities {
+    pub service: ServiceName,
+    pub build: String,
+    pub profiles: Vec<String>,
+    pub header_descriptors: Vec<HeaderDescriptor>,
+    pub framing: FramingCapabilities,
+    pub limits: CapabilityLimits,
+    pub modes: CapabilityModes,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema-export", derive(schemars::JsonSchema))]
+#[serde(rename_all = "camelCase")]
+pub struct FramingCapabilities {
+    pub content_type: String,
+    pub max_metadata_bytes: usize,
+    pub max_data_bytes: usize,
+    pub max_upload_frames: usize,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema-export", derive(schemars::JsonSchema))]
+#[serde(rename_all = "camelCase")]
+pub struct CapabilityLimits {
+    pub max_request_bytes: usize,
+    pub max_response_bytes: usize,
+    pub max_timeout_ms: u64,
+    pub max_concurrent: usize,
+    pub max_concurrent_per_partition: usize,
+    pub max_queued: usize,
+    pub max_queued_per_partition: usize,
+    pub max_envelopes: usize,
+    pub envelope_timeout_ms: u64,
+    pub max_control_bytes: usize,
+    pub max_header_bytes: usize,
+    pub max_headers: usize,
+    pub max_contexts: usize,
+    pub max_contexts_per_partition: usize,
+    pub context_idle_ttl_ms: u64,
+    pub context_max_idle_ttl_ms: u64,
+    pub context_max_age_ms: u64,
+    pub max_cookies: usize,
+    pub max_cookie_bytes: usize,
+    pub max_cookie_size: usize,
+    pub max_allowed_origins: usize,
+    pub registry_capacity: usize,
+    pub registry_ttl_ms: u64,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema-export", derive(schemars::JsonSchema))]
+pub struct CapabilityModes {
+    pub egress: Vec<String>,
+    pub cookies: Vec<String>,
+    pub stream: Vec<String>,
+    pub cancel: Vec<String>,
 }
 
 #[derive(Deserialize)]

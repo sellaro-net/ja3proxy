@@ -1,7 +1,7 @@
 //! Canonical profile and header discovery from the exact pinned emulation registry.
 
 use crate::error::{ErrorCode, TransportError};
-use serde::Serialize;
+use crate::models::HeaderDescriptor;
 use wreq::IntoEmulation;
 use wreq_util::Profile;
 
@@ -39,13 +39,6 @@ pub(crate) fn profile_emulation(profile: Profile, headers: bool) -> wreq::Emulat
         .headers(headers)
         .build()
         .into_emulation()
-}
-
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct HeaderDescriptor {
-    tls_profile: String,
-    headers: Vec<(String, String)>,
 }
 
 pub fn header_descriptors() -> Vec<HeaderDescriptor> {
