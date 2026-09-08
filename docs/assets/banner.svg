@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="440" viewBox="0 0 1280 440" role="img" aria-labelledby="title description">
+  <title id="title">ja3proxy — browser-shaped TLS, explicit control</title>
+  <desc id="description">A dark navy project banner with a mint wordmark and a fingerprint flowing into three isolated network routes.</desc>
+  <defs>
+    <radialGradient id="glow" cx="78%" cy="42%" r="65%">
+      <stop offset="0" stop-color="#153b43"/>
+      <stop offset="1" stop-color="#0b1220"/>
+    </radialGradient>
+    <linearGradient id="ink" x1="0" x2="1">
+      <stop stop-color="#99f6e4"/>
+      <stop offset="1" stop-color="#2dd4bf"/>
+    </linearGradient>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M32 0H0V32" fill="none" stroke="#cbd5e1" stroke-opacity=".045"/>
+    </pattern>
+    <clipPath id="corners"><rect width="1280" height="440" rx="22"/></clipPath>
+  </defs>
+  <g clip-path="url(#corners)">
+    <rect width="1280" height="440" fill="url(#glow)"/>
+    <rect width="1280" height="440" fill="url(#grid)"/>
+    <path d="M0 439H1280" stroke="#2dd4bf" stroke-opacity=".3" stroke-width="2"/>
+    <g font-family="Segoe UI, Helvetica, Arial, sans-serif">
+      <rect x="64" y="61" width="28" height="3" rx="1.5" fill="#5eead4"/>
+      <text x="105" y="69" fill="#94a3b8" font-size="13" font-weight="600" letter-spacing="2.6">TLS / HTTP / SESSION TRANSPORT</text>
+      <text x="60" y="170" fill="#f8fafc" font-size="86" font-weight="700" letter-spacing="-4">ja3<tspan fill="url(#ink)">proxy</tspan></text>
+      <text x="64" y="230" fill="#e2e8f0" font-size="28" font-weight="400">Browser-shaped TLS.</text>
+      <text x="64" y="269" fill="#e2e8f0" font-size="28" font-weight="400">Explicit control.</text>
+      <g font-size="13" fill="#94a3b8">
+        <text x="64" y="355">BINARY STREAMS</text>
+        <circle cx="205" cy="350" r="2" fill="#2dd4bf"/>
+        <text x="225" y="355">ISOLATED SESSIONS</text>
+        <circle cx="391" cy="350" r="2" fill="#2dd4bf"/>
+        <text x="411" y="355">EXPLICIT EGRESS</text>
+      </g>
+    </g>
+    <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="858" cy="212" r="140" stroke="#5eead4" stroke-opacity=".08"/>
+      <circle cx="858" cy="212" r="113" stroke="#5eead4" stroke-opacity=".13" stroke-dasharray="3 10"/>
+      <g stroke="url(#ink)" stroke-width="3.5">
+        <path d="M790 193C790 110 924 110 924 193V219" opacity=".45"/>
+        <path d="M777 218V193C777 95 938 95 938 193V227" opacity=".22"/>
+        <path d="M803 219V194C803 126 911 126 911 194V222C911 248 902 273 887 291" opacity=".7"/>
+        <path d="M816 238V194C816 144 897 144 897 194V217C897 244 889 267 874 282"/>
+        <path d="M829 263C837 247 830 217 830 194C830 161 884 161 884 194V216C884 235 880 248 873 259"/>
+        <path d="M843 277C858 256 857 224 844 206V194C844 178 870 178 870 194V216C870 234 866 240 861 244" opacity=".85"/>
+        <path d="M790 232C790 250 786 267 779 278M803 248C803 264 800 278 793 291M816 278L810 292" opacity=".5"/>
+      </g>
+      <g stroke="#5eead4" stroke-width="1.5" opacity=".6">
+        <path d="M965 174H1012L1048 125H1120"/>
+        <path d="M981 213H1120"/>
+        <path d="M966 253H1012L1048 301H1120"/>
+      </g>
+      <g fill="#0f2531" stroke="#2dd4bf" stroke-opacity=".5">
+        <rect x="1120" y="106" width="40" height="40" rx="10"/>
+        <rect x="1120" y="193" width="40" height="40" rx="10"/>
+        <rect x="1120" y="281" width="40" height="40" rx="10"/>
+      </g>
+      <g fill="#5eead4">
+        <circle cx="1140" cy="126" r="4"/>
+        <circle cx="1140" cy="213" r="4"/>
+        <circle cx="1140" cy="301" r="4"/>
+      </g>
+    </g>
+    <text x="790" y="357" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11" letter-spacing="3" fill="#658b94">IDENTITY → TRANSPORT → ORIGIN</text>
+  </g>
+</svg>

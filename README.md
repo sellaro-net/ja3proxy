@@ -1,42 +1,84 @@
-<div align="center">
+<p align="center">
+  <img src="docs/assets/banner.svg" alt="ja3proxy — Browser-shaped TLS. Explicit control." width="1280">
+</p>
 
-# ja3proxy
+<p align="center">
+  <strong>Browser fingerprints, binary streams and isolated sessions — without running a browser.</strong>
+</p>
 
-**Browser TLS fingerprints · Explicit proxy routing · Isolated cookie sessions**
+<p align="center">
+  <a href="https://github.com/sellaro-net/ja3proxy/actions/workflows/docker-build.yml"><img src="https://img.shields.io/github/actions/workflow/status/sellaro-net/ja3proxy/docker-build.yml?branch=main&amp;style=flat-square&amp;label=build&amp;color=0d9488" alt="Build status"></a>
+  <a href="rust-toolchain.toml"><img src="https://img.shields.io/badge/Rust-1.98.1-334155?style=flat-square&amp;logo=rust&amp;logoColor=white" alt="Rust 1.98.1"></a>
+</p>
 
-A small HTTP service for authenticated, binary-safe requests with browser-shaped
-TLS and HTTP/2 behavior — without launching a browser.
+<p align="center">
+  <a href="#quick-start"><strong>Quick start</strong></a> &nbsp; / &nbsp;
+  <a href="#documentation"><strong>Documentation</strong></a> &nbsp; / &nbsp;
+  <a href="#security"><strong>Security</strong></a> &nbsp; / &nbsp;
+  <a href="#development"><strong>Development</strong></a>
+</p>
 
-[![CI](https://github.com/sellaro-net/ja3proxy/actions/workflows/docker-build.yml/badge.svg)](https://github.com/sellaro-net/ja3proxy/actions/workflows/docker-build.yml)
-[![Rust](https://img.shields.io/badge/Rust-1.98.1-000000?logo=rust)](rust-toolchain.toml)
+<br>
 
-[Quick start](#quick-start) · [Usage guide](docs/usage.md) · [API reference](docs/api.md) · [Configuration](docs/configuration.md) · [Security](#security)
+## Documentation
 
-</div>
+<table>
+<tr>
+<td width="33%" valign="top">
+<h3><a href="docs/usage.md">Usage guide ↗</a></h3>
+<p>From your first request to proxy routing, cookie sessions and cancellation.</p>
+<a href="docs/usage.md"><strong>Explore the workflows →</strong></a>
+</td>
+<td width="33%" valign="top">
+<h3><a href="docs/api.md">API reference ↗</a></h3>
+<p>Endpoints, binary framing, request fields and terminal diagnostics.</p>
+<a href="docs/api.md"><strong>Build your integration →</strong></a>
+</td>
+<td width="33%" valign="top">
+<h3><a href="docs/configuration.md">Configuration ↗</a></h3>
+<p>Service secrets, resource limits and private container deployments.</p>
+<a href="docs/configuration.md"><strong>Configure your instance →</strong></a>
+</td>
+</tr>
+</table>
 
----
+## Transport at a glance
 
-## What it does
+<table>
+<tr>
+<td width="50%" valign="top">
+<h3>Browser identity</h3>
+<p>Selectable TLS/HTTP/2 fingerprints, matching header emulation and a fixed user agent.</p>
+</td>
+<td width="50%" valign="top">
+<h3>Explicit egress</h3>
+<p>Direct, HTTP, HTTPS or SOCKS routing. A failed proxy never silently becomes a direct request.</p>
+</td>
+</tr>
+<tr>
+<td valign="top">
+<h3>Isolated sessions</h3>
+<p>Reusable connection contexts and first-party cookie jars, scoped to the caller and connection identity.</p>
+</td>
+<td valign="top">
+<h3>Binary streaming</h3>
+<p>Raw uploads and decoded downloads, bounded by byte limits and verified terminal frames.</p>
+</td>
+</tr>
+</table>
 
-| Capability | What you get |
-|---|---|
-| **Browser identities** | Selectable TLS/HTTP/2 profiles, optional matching header emulation and a fixed user agent. |
-| **Explicit routing** | Direct egress or HTTP, HTTPS, SOCKS4, SOCKS4a, SOCKS5 and SOCKS5h proxies. |
-| **Reusable contexts** | Connection pools isolated by caller partition, proxy and browser identity. |
-| **Cookie sessions** | First-party jars with domain/path rules, expiry, Secure, prefix/public-suffix checks and partitioned cookies. |
-| **Binary streaming** | Raw uploads and decoded response streams with bounded frames and byte limits. |
-| **Controlled execution** | Bounded admission, total deadlines, cancellation and final delivery diagnostics. |
+**You own the policy.** The service handles transport, not JavaScript execution
+or challenge solving. Retries, redirects and identity changes remain explicit
+application decisions. Admission, execution and cancellation have bounded budgets.
 
-**Not a browser automation engine.** No JavaScript execution, automatic challenge
-solving, hidden retries or automatic redirects. The application decides what to
-retry, which redirect to follow and when to replace an identity.
+<br>
 
 ## Quick start
 
-These commands use a POSIX shell. The request example needs **Python 3.10+** and
-only the standard library; no Python packages are required.
+A working service and your first request in two steps. Commands use a POSIX
+shell; the [example client](examples/request.py) needs Python 3.10+ with no extra packages.
 
-### 1. Build and start
+### 1 · Start the service
 
 ```sh
 git clone https://github.com/sellaro-net/ja3proxy.git
@@ -53,10 +95,25 @@ docker run --rm --name ja3proxy-local \
   ja3proxy-local
 ```
 
-Keep the container running. Use another shell with the **same** token for the
-following commands. Never commit the token or reuse an application/login secret.
+### 2 · Send a request
 
-### 2. Check the service
+Keep the container running. In another shell, set the **same** `JA3_PROXY_TOKEN`
+and `JA3_PROXY_URL`, then run this from the repository directory:
+
+```sh
+python examples/request.py https://example.com/ \
+  --partition demo --direct --output response.html
+```
+
+The client streams the body, validates completion and only then replaces the
+output file. Request IDs and the final status summary go to stderr.
+
+> [!TIP]
+> **Ready for more?** Try a [JSON POST or binary upload](docs/usage.md#requests-and-uploads),
+> use [your proxy](docs/usage.md#proxy-routing), or open a [cookie session](docs/usage.md#cookie-sessions).
+
+<details>
+<summary><strong>Check liveness and discover supported capabilities</strong></summary>
 
 ```sh
 curl --fail "$JA3_PROXY_URL/health"
@@ -65,58 +122,39 @@ curl --fail "$JA3_PROXY_URL/capabilities" \
   -H "Authorization: Bearer $JA3_PROXY_TOKEN"
 ```
 
-`/health` checks liveness. `/capabilities` reports the profiles, limits and
-features of the running service.
+`/health` is public liveness. `/capabilities` is authenticated and reports the
+profiles, limits and features of the running instance.
 
-### 3. Make a request
-
-```sh
-python examples/request.py https://example.com/ \
-  --partition demo --direct --profile chrome_149 \
-  --output response.html
-```
-
-The [example client](examples/request.py) negotiates the media type, streams the
-response and checks its terminal frame. It prints a small status summary to
-stderr and only replaces `response.html` after the transport finishes correctly.
+</details>
 
 > [!IMPORTANT]
-> `/request` is a framed binary endpoint, not a JSON-in/JSON-out endpoint.
-> Use the example client to get started, or implement the [wire contract](docs/api.md#wire-format).
+> `/request` uses **binary framing**, not JSON-in/JSON-out. Start with the
+> [working client](examples/request.py) or the [wire contract](docs/api.md#wire-format).
 
-## Choose your workflow
-
-| I want to… | Start here |
-|---|---|
-| Send a GET, JSON POST or binary upload | [Requests and uploads](docs/usage.md#requests-and-uploads) |
-| Route traffic through my proxy | [Proxy routing](docs/usage.md#proxy-routing) |
-| Reuse one connection identity | [Connection contexts](docs/usage.md#connection-contexts) |
-| Keep cookies between requests | [Cookie sessions](docs/usage.md#cookie-sessions) |
-| Change a session's fingerprint safely | [Identity changes](docs/usage.md#identity-changes) |
-| Cancel work or inspect its outcome | [Cancellation and status](docs/usage.md#cancellation-and-status) |
-| Build a client in another language | [API reference](docs/api.md) |
-| Configure secrets, limits or containers | [Configuration and deployment](docs/configuration.md) |
+<br>
 
 ## Security
 
-- **Authenticated API:** every route except `/health` requires a dedicated bearer token.
-- **No shared cookie jar:** contexts belong to a caller partition and immutable connection identity.
-- **Socket-bound SSRF checks:** target and proxy addresses are validated for direct, CONNECT and SOCKS connections; mixed public/private DNS answers are rejected.
-- **TLS verification stays enabled:** numeric routing preserves the original Host, SNI and certificate checks.
-- **No implicit direct fallback:** an unavailable proxy is an error, not permission to use another exit.
+- **Dedicated authentication.** Every route except `/health` requires a service bearer token. Never commit it or reuse a login/application secret.
+- **Scoped state.** Contexts and cookie jars belong to a caller partition and an immutable connection identity.
+- **Checked connections.** Target and proxy addresses are validated at the socket boundary; mixed public/private DNS answers are rejected.
+- **Verified TLS.** Numeric routing preserves the original Host, SNI and certificate checks.
 
 > [!WARNING]
-> Keep this service private. Bearer authentication does not replace network
-> isolation or TLS between hosts. `ALLOW_PRIVATE_IPS=true` expands the network
-> boundary; leave it disabled outside deliberately isolated environments.
+> **Keep the service private.** Bearer authentication does not replace network
+> isolation or TLS between hosts. Leave `ALLOW_PRIVATE_IPS` disabled outside
+> deliberately isolated environments.
 
-Read the [deployment guidance](docs/configuration.md#deployment) before exposing
-an instance. Report vulnerabilities [privately](https://github.com/sellaro-net/ja3proxy/security/advisories/new), not with credentials or private response bodies in a public issue.
+[Deployment guidance →](docs/configuration.md#deployment) &nbsp; · &nbsp;
+[Report a vulnerability privately →](https://github.com/sellaro-net/ja3proxy/security/advisories/new)
 
 ## Development
 
-Rust **1.98.1** is selected by [`rust-toolchain.toml`](rust-toolchain.toml).
-Native builds also need C/C++, CMake, Go and Clang/libclang; the
+<details>
+<summary><strong>Build locally and run the checks</strong></summary>
+
+Rust **1.98.1** is pinned in [`rust-toolchain.toml`](rust-toolchain.toml).
+Native builds also need C/C++, CMake, Go and Clang/libclang. The
 [`Dockerfile`](Dockerfile) provides the Linux build environment.
 
 ```sh
@@ -128,18 +166,27 @@ cargo clippy --all-targets --locked -- -D warnings
 cargo test --locked
 ```
 
-The exact `wreq` dependency includes a narrow connector patch for address and
-cancellation ownership. See its [provenance and refresh requirements](vendor/wreq/transport-provenance.json)
+</details>
+
+The pinned `wreq` dependency includes a narrow connector patch for address and
+cancellation ownership. Read its [provenance and refresh requirements](vendor/wreq/transport-provenance.json)
 before updating it. Third-party code keeps its own license terms; this repository
 has no project-level license grant.
 
-## Project links
+<br>
 
-| Resource | Link |
-|---|---|
-| Documentation | [Usage](docs/usage.md) · [API](docs/api.md) · [Configuration](docs/configuration.md) |
-| Executable example | [Python streaming client](examples/request.py) |
-| Source and changes | [Repository](https://github.com/sellaro-net/ja3proxy) · [Pull requests](https://github.com/sellaro-net/ja3proxy/pulls) |
-| Builds and releases | [Actions](https://github.com/sellaro-net/ja3proxy/actions/workflows/docker-build.yml) · [Releases](https://github.com/sellaro-net/ja3proxy/releases) |
-| Image namespace | `ghcr.io/sellaro-net/ja3proxy` — select a verified digest for deployment |
-| Security reports | [Private advisory](https://github.com/sellaro-net/ja3proxy/security/advisories/new) |
+---
+
+<p align="center">
+  <strong>ja3proxy</strong><br>
+  <sub>Browser-shaped TLS. Application-owned control.</sub>
+</p>
+<p align="center">
+  <a href="https://github.com/sellaro-net/ja3proxy">Source</a> &nbsp; · &nbsp;
+  <a href="https://github.com/sellaro-net/ja3proxy/pulls">Pull requests</a> &nbsp; · &nbsp;
+  <a href="https://github.com/sellaro-net/ja3proxy/actions/workflows/docker-build.yml">Builds</a> &nbsp; · &nbsp;
+  <a href="https://github.com/sellaro-net/ja3proxy/releases">Releases</a>
+</p>
+<p align="center">
+  <sub>Images: <code>ghcr.io/sellaro-net/ja3proxy</code> — deploy a verified digest.</sub>
+</p>
