@@ -11,6 +11,7 @@ on:
       - 'rust-toolchain.toml'
       - 'Dockerfile'
       - '.dockerignore'
+      - '.gitattributes'
       - 'package.json'
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
