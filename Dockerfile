@@ -1,5 +1,5 @@
-# syntax=docker/dockerfile:1.7
-FROM rust:1.97.0-bookworm@sha256:8fa55b2f3ddf97471ab6a767bfa3f37e6bad0986ba823e75fea57e2a2a5c3073 AS builder
+# syntax=docker/dockerfile:1.27.0@sha256:bde3983e9c939224420ddaf6b784cc30e09b035a4dea01f581230c50809f372e
+FROM rust:1.98.0-trixie@sha256:620dbcd124499c59e2406d3741574b5c5838cf9eb9656f0c3a03948f79b02959 AS builder
 ARG TARGETARCH
 
 WORKDIR /app
@@ -10,16 +10,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libclang-dev \
     && rm -rf /var/lib/apt/lists/*
 
+# Use the project compiler even when official image publication lags Rust releases.
+COPY rust-toolchain.toml ./
+RUN rustup show active-toolchain
+
 COPY Cargo.toml Cargo.lock ./
 COPY src ./src
 # Compile the real source once. A cached dummy main must never become the
 # shipped executable; target caches remain isolated between architectures.
 RUN --mount=type=cache,id=ja3proxy-registry,target=/usr/local/cargo/registry,sharing=locked \
-    --mount=type=cache,id=ja3proxy-target-${TARGETARCH},target=/app/target,sharing=locked \
+    --mount=type=cache,id=ja3proxy-target-trixie-${TARGETARCH},target=/app/target,sharing=locked \
     cargo build --release --locked \
     && cp /app/target/release/ja3proxy /ja3proxy
 
-FROM debian:bookworm-slim@sha256:88200866dfff7ea7f5cbcb6ec7c8a701889efe6fe859fe64d6990e4b07ea4171
+FROM debian:trixie-slim@sha256:d7e12182ce18b85b93007c1dedf31f2d29e01ccf3182cc4017c709b6259bc132
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     curl \

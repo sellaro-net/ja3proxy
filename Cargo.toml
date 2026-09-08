@@ -2,7 +2,7 @@
 name = "ja3proxy"
 version = "1.0.0"
 edition = "2024"
-rust-version = "1.97"
+rust-version = "1.98.1"
 description = "TLS-Impersonate HTTP Proxy Service with JA3/JA4 fingerprinting"
 authors = ["Lukas"]
 repository = "https://github.com/sellaro-net/ja3proxy"
@@ -10,25 +10,24 @@ readme = "README.md"
 
 [dependencies]
 # Runtime
-tokio = { version = "1.52.3", features = ["full"] }
+tokio = { version = "1.53.1", features = ["full"] }
 
-# HTTP client and browser emulation must move as a tested release-candidate pair.
-# Exact pins prevent Cargo from resolving API-incompatible pre-release versions.
-wreq = { version = "=6.0.0-rc.29", features = ["json", "socks", "gzip", "brotli", "zstd", "deflate", "stream"] }
-wreq-util = { version = "=3.0.0-rc.14", features = ["emulation-serde", "emulation-compression"] }
-futures-util = "0.3.32"
+# HTTP client and browser emulation use upstream's renumbered stable release pair.
+wreq = { version = "0.16.1", features = ["json", "socks", "gzip", "brotli", "zstd", "deflate", "stream"] }
+wreq-util = { version = "0.2.0", features = ["emulation-serde", "emulation-compression"] }
+futures-util = "0.3.34"
 
 # Web Framework
 axum = { version = "0.8.9", features = ["json"] }
 tower = { version = "0.5.3", features = ["limit", "timeout"] }
-tower-http = { version = "0.7.0", features = ["trace", "limit", "timeout"] }
+tower-http = { version = "0.7.1", features = ["trace", "limit", "timeout"] }
 
 # Serialization
-serde = { version = "1.0.228", features = ["derive"] }
-serde_json = "1.0.150"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.151"
 
 # Base64 for binary responses
-base64 = "0.22.1"
+base64 = "0.23.1"
 
 # URL parsing for SSRF protection
 url = "2.5.8"
@@ -38,7 +37,7 @@ tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 
 # Error handling
-anyhow = "1.0.103"
+anyhow = "1.0.104"
 
 [profile.release]
 lto = true

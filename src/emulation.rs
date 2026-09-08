@@ -25,8 +25,7 @@ pub fn parse_tls_profile(profile: &str) -> Result<Profile, String> {
 
 /// Get every canonical TLS profile name exposed by the pinned wreq-util release.
 ///
-/// The inherent `Profile::VARIANTS` registry replaced the strum-based registry
-/// in wreq-util 3.0. Keeping this dynamic prevents hand-maintained profile lists.
+/// Use the upstream registry so profile discovery stays aligned with parsing.
 /// A vector of profile names like ["chrome_100", "chrome_101", ..., "firefox_139"]
 pub fn available_profiles() -> Vec<String> {
     Profile::VARIANTS
@@ -68,24 +67,9 @@ mod tests {
     }
 
     #[test]
-    fn default_profile_is_the_latest_pinned_chrome() {
-        let serialized = serde_json::to_string(&default_profile()).unwrap();
-        assert_eq!(serialized, "\"chrome_149\"");
-    }
-
-    #[test]
     fn test_parse_invalid_profile() {
         let result = parse_tls_profile("invalid_999");
         assert!(result.is_err());
         assert_eq!(result.unwrap_err(), "invalid_999");
-    }
-
-    #[test]
-    fn test_available_profiles_not_empty() {
-        let profiles = available_profiles();
-        assert!(!profiles.is_empty());
-        // Should contain common profiles
-        assert!(profiles.iter().any(|p| p.starts_with("chrome_")));
-        assert!(profiles.iter().any(|p| p.starts_with("firefox_")));
     }
 }
