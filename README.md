@@ -37,22 +37,19 @@ cd ja3proxy
 export JA3_PROXY_TOKEN="$(openssl rand -hex 32)"
 export JA3_PROXY_URL="http://127.0.0.1:8080"
 
-docker pull ghcr.io/sellaro-net/ja3proxy:latest
+docker build -t ja3proxy-local .
 docker run --rm --name ja3proxy-local \
   --read-only --cap-drop ALL --security-opt no-new-privileges \
   -e JA3_PROXY_TOKEN \
   -p 127.0.0.1:8080:8080 \
-  ghcr.io/sellaro-net/ja3proxy:latest
+  ja3proxy-local
 ```
 
-The public image supports Linux `amd64` and `arm64`; pulling it requires no
-GitHub account or `docker login`. `latest` follows successful builds of `main`.
-For production, pin the verified `sha256` digest from the container workflow
-summary rather than relying on a moving tag. Each publication checks an
-anonymous pull in a separate job without registry credentials.
-
-To build from source instead, run `docker build -t ja3proxy-local .` and replace
-the image reference in `docker run` with `ja3proxy-local`.
+The published image is `ghcr.io/sellaro-net/ja3proxy`, with Linux `amd64` and
+`arm64` support. It currently requires authorized GHCR access; making the
+repository public does not make its container package public. `latest` follows
+successful builds of `main`. For production, pin the verified `sha256` digest
+from the container workflow summary rather than relying on a moving tag.
 
 Keep the container running. In another shell, set the same `JA3_PROXY_TOKEN`
 and `JA3_PROXY_URL`, then run the following commands from the repository directory.
