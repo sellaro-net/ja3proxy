@@ -4,6 +4,12 @@ Only `@sellaro/ja3proxy` SDK releases are recorded here. SDK tags use `sdk-v*`;
 Rust image releases have a separate lifecycle. Subsequent entries summarize SDK
 and shared wire-contract commits since the previous SDK tag.
 
+## [1.0.1](https://github.com/sellaro-net/ja3proxy/compare/sdk-v1.0.0...sdk-v1.0.1)
+
+- feat\(release\): automate reviewed SDK releases with npm OIDC \(\#19\) ([d052b86](https://github.com/sellaro-net/ja3proxy/commit/d052b86275fad0d578b648047b205ca1b0b7ff51))
+
+[Reviewed source changes](https://github.com/sellaro-net/ja3proxy/compare/sdk-v1.0.0...d052b86275fad0d578b648047b205ca1b0b7ff51)
+
 ## [1.0.0](https://github.com/sellaro-net/ja3proxy/tree/sdk-v1.0.0)
 
 Initial public, MIT-licensed SDK for Node.js 22.14 or newer, with no npm runtime
