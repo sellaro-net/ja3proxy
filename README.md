@@ -13,8 +13,9 @@ binary-safe representation of the upstream response.
 - One independently deployable service; it is not part of the Sellaro monorepo.
 - Rust **1.98.1** is selected by [`rust-toolchain.toml`](rust-toolchain.toml).
   Dependencies are resolved by [`Cargo.lock`](Cargo.lock).
-- `wreq` and `wreq-util` use their current stable release line and are upgraded
-  as one tested pair. The lockfile records their concrete versions.
+- `wreq`, `wreq-util` and their TLS backend `btls` are upgraded together.
+  The backend is explicit because API error codes use its structured error
+  types, not changing error messages. The lockfile records concrete versions.
 - Published images use `ghcr.io/sellaro-net/ja3proxy` and include native
   `linux/amd64` and `linux/arm64` manifests, provenance and an SBOM.
 - The runtime is non-root. Its executable is root-owned, and PR CI verifies
