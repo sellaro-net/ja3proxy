@@ -162,3 +162,24 @@ test('release requests expose explicitly allowed redirects without following the
     await new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
   }
 });
+
+test('publication visibility polling survives a transient 404 but still rejects a missing document after its bound', async () => {
+  let visible = false;
+  const server = createServer((incoming, response) => {
+    response.statusCode = visible && incoming.url === '/publication' ? 200 : 404;
+    visible = true;
+    response.end();
+  });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  try {
+    const origin = `http://127.0.0.1:${server.address().port}`;
+    await assert.rejects(request(`${origin}/publication`), /unexpected HTTP 404/);
+    visible = false;
+    const response = await request(`${origin}/publication`, { notFoundRetries: 1 });
+    assert.equal(response.status, 200);
+    await response.body?.cancel();
+    await assert.rejects(request(`${origin}/missing`, { notFoundRetries: 1 }), /unexpected HTTP 404/);
+  } finally {
+    await new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
+  }
+});

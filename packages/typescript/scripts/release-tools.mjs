@@ -4,6 +4,7 @@ import { createHash } from 'node:crypto';
 import { appendFile, readFile, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { join, resolve } from 'node:path';
+import { setTimeout as delay } from 'node:timers/promises';
 import { npmCliPath } from './package-tools.mjs';
 
 export const repository = 'sellaro-net/ja3proxy';
@@ -70,18 +71,27 @@ export function resolveIdentity(runGit, eventSha, requestedVersion) {
   return { version, tag, source, tagged, filename: `sellaro-ja3proxy-${version}.tgz` };
 }
 
-export async function request(url, { method = 'GET', body, headers = {}, statuses = [200], github = false } = {}) {
+export async function request(url, { method = 'GET', body, headers = {}, statuses = [200], github = false, notFoundRetries = 0 } = {}) {
   if (github) assert.ok(process.env.GITHUB_TOKEN, 'An ephemeral GitHub token is required.');
-  const response = await fetch(url, {
-    method, body, redirect: 'manual', signal: AbortSignal.timeout(30_000),
-    headers: {
-      accept: 'application/json',
-      ...(github ? { authorization: `Bearer ${process.env.GITHUB_TOKEN}`, 'x-github-api-version': '2022-11-28' } : {}),
-      ...headers,
-    },
-  });
-  assert.ok(statuses.includes(response.status), `${method} ${url}: unexpected HTTP ${response.status}`);
-  return response;
+  assert.ok(Number.isSafeInteger(notFoundRetries) && notFoundRetries >= 0 && notFoundRetries <= 30);
+  if (notFoundRetries) assert.equal(method, 'GET', 'Only publication visibility reads may be retried.');
+  const requestHeaders = {
+    accept: 'application/json',
+    ...(github ? { authorization: `Bearer ${process.env.GITHUB_TOKEN}`, 'x-github-api-version': '2022-11-28' } : {}),
+    ...headers,
+  };
+  for (let attempt = 0; ; attempt += 1) {
+    const response = await fetch(url, {
+      method, body, headers: requestHeaders, redirect: 'manual', signal: AbortSignal.timeout(30_000),
+    });
+    if (response.status === 404 && attempt < notFoundRetries) {
+      await response.body?.cancel();
+      await delay(2_000);
+      continue;
+    }
+    assert.ok(statuses.includes(response.status), `${method} ${url}: unexpected HTTP ${response.status}`);
+    return response;
+  }
 }
 
 export async function github(path, options = {}) {
@@ -108,9 +118,9 @@ export async function assertProtection() {
   assert.equal(policies.branch_policies?.[0]?.type, 'branch');
 }
 
-export async function registryManifest(version) {
+export async function registryManifest(version, { notFoundRetries = 0 } = {}) {
   assert.match(version, stableVersion);
-  const response = await request(`https://registry.npmjs.org/@sellaro%2fja3proxy/${version}`, { statuses: [200, 404] });
+  const response = await request(`https://registry.npmjs.org/@sellaro%2fja3proxy/${version}`, { statuses: [200, 404], notFoundRetries });
   if (response.status === 404) {
     await response.body?.cancel();
     return null;
@@ -134,7 +144,7 @@ export function assertProvenance(statement, identity, integrity) {
   assert.equal(statement.predicate.runDetails?.builder?.id, 'https://github.com/actions/runner/github-hosted');
 }
 
-export async function verifyRegistry(value, identity, expectedIntegrity) {
+export async function verifyRegistry(value, identity, expectedIntegrity, { notFoundRetries = 0 } = {}) {
   const integrity = value.dist.integrity;
   if (expectedIntegrity) assert.equal(integrity, expectedIntegrity, 'npm contains different bytes; versions must never be overwritten.');
   if (identity.version === initialPublication.version) {
@@ -146,7 +156,7 @@ export async function verifyRegistry(value, identity, expectedIntegrity) {
   const url = new URL(value.dist.attestations?.url ?? 'https://invalid.invalid');
   assert.equal(url.origin, 'https://registry.npmjs.org', 'npm provenance is required for recovery.');
   assert.equal(url.username + url.password + url.hash, '');
-  const response = await request(url);
+  const response = await request(url, { notFoundRetries });
   const document = await response.json();
   const provenance = document.attestations?.filter(item => item.predicateType === 'https://slsa.dev/provenance/v1');
   assert.equal(provenance?.length, 1, 'Exactly one npm provenance attestation is required.');
