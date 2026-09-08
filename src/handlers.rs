@@ -1,4 +1,4 @@
-//! Authenticated transport-v2 orchestration with bounded streaming in both directions.
+//! Authenticated transport orchestration with bounded streaming in both directions.
 use crate::{
     admission::{Admission, Ticket},
     auth::{self, PRINCIPAL},
@@ -73,7 +73,7 @@ pub async fn capabilities_handler(State(state): State<AppState>) -> Response {
 fn capability_bytes(config: &Config) -> Bytes {
     let limits = ContextLimits::default();
     let capabilities = json!({
-        "version":2,"service":"ja3proxy","build":env!("CARGO_PKG_VERSION"),
+        "service":"ja3proxy","build":env!("CARGO_PKG_VERSION"),
         "profiles":available_profiles(),"headerDescriptors":header_descriptors(),
         "framing":{"contentType":protocol::CONTENT_TYPE,"maxMetadataBytes":protocol::MAX_METADATA_BYTES,
             "maxDataBytes":protocol::MAX_DATA_BYTES,"maxUploadFrames":protocol::MAX_UPLOAD_FRAMES},
@@ -403,7 +403,6 @@ async fn transfer(
     let bodyless = metadata.method == "HEAD" || matches!(response.status().as_u16(), 204 | 304);
     let headers = response_headers(response.headers(), bodyless)?;
     let response_metadata = ResponseMetadata {
-        version: 2,
         request_id: metadata.request_id,
         status: response.status().as_u16(),
         headers,
@@ -687,7 +686,7 @@ mod tests {
         bytes.extend_from_slice(&protocol::frame(3, &[]));
         Request::builder()
             .method("POST")
-            .uri("/v2/request")
+            .uri("/request")
             .header(header::CONTENT_TYPE, protocol::CONTENT_TYPE)
             .body(Body::from(bytes))
             .unwrap()
@@ -848,32 +847,54 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn every_v2_route_requires_the_dedicated_bearer() {
+    async fn every_api_route_and_unknown_path_requires_the_dedicated_bearer() {
         let state = AppState::new(Config::for_test());
         let token = state.config.token.clone();
         let server = spawn(crate::router(state)).await;
         let client = wreq::Client::builder().no_proxy().build().unwrap();
-        for path in [
-            "/v2/capabilities",
-            "/v2/request",
-            "/v2/contexts",
-            "/v2/not-found",
+        for (method, path) in [
+            (wreq::Method::GET, "/capabilities"),
+            (wreq::Method::POST, "/request"),
+            (wreq::Method::POST, "/contexts"),
+            (wreq::Method::DELETE, "/contexts/test"),
+            (wreq::Method::POST, "/contexts/test/cookies"),
+            (wreq::Method::DELETE, "/requests/test"),
+            (wreq::Method::POST, "/requests/test/status"),
+            (wreq::Method::GET, "/not-found"),
         ] {
             let response = client
-                .get(format!("http://{}{path}", server.address))
+                .request(method, format!("http://{}{path}", server.address))
                 .send()
                 .await
                 .unwrap();
             assert_eq!(response.status().as_u16(), 401);
         }
         let response = client
-            .get(format!("http://{}/v2/capabilities", server.address))
-            .bearer_auth(token)
+            .get(format!("http://{}/health", server.address))
+            .send()
+            .await
+            .unwrap();
+        assert_eq!(response.status().as_u16(), 200);
+        let response = client
+            .get(format!("http://{}/capabilities", server.address))
+            .bearer_auth(&token)
             .send()
             .await
             .unwrap();
         assert_eq!(response.status().as_u16(), 200);
         let capabilities: Value = response.json().await.unwrap();
-        assert_eq!(capabilities["version"], 2);
+        assert_eq!(capabilities["service"], "ja3proxy");
+        assert_eq!(
+            capabilities["framing"]["contentType"],
+            protocol::CONTENT_TYPE
+        );
+        let response = client
+            .get(format!("http://{}/not-found", server.address))
+            .bearer_auth(token)
+            .send()
+            .await
+            .unwrap();
+        let error: TransportError = response.json().await.unwrap();
+        assert_eq!(error.code, ErrorCode::UnsupportedCapability);
     }
 }

@@ -36,7 +36,6 @@ pub struct CookieRecord {
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct CookieSnapshot {
-    pub version: u8,
     pub partition_key: String,
     pub cookies: Vec<CookieRecord>,
 }
@@ -183,7 +182,6 @@ impl ManagedJar {
             ))
         });
         CookieSnapshot {
-            version: 1,
             partition_key: self.partition_key.clone(),
             cookies,
         }
@@ -281,11 +279,6 @@ impl ManagedJar {
         snapshot: CookieSnapshot,
         origins: &[String],
     ) -> Result<(), TransportError> {
-        if snapshot.version != 1 {
-            return Err(invalid(
-                "Die Cookie-Snapshot-Version wird nicht unterstützt.",
-            ));
-        }
         if snapshot.partition_key != self.partition_key {
             return Err(invalid(
                 "Die Cookie-Partition gehört zu einer anderen First-Party-Site.",

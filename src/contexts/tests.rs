@@ -320,7 +320,6 @@ async fn competing_cookie_mutations_compare_and_swap_exactly_once() {
                 CookieCommand::Import {
                     partition: "p".to_owned(),
                     snapshot: CookieSnapshot {
-                        version: 1,
                         partition_key: "https://example.com".to_owned(),
                         cookies: vec![],
                     },
@@ -349,7 +348,6 @@ async fn competing_cookie_mutations_compare_and_swap_exactly_once() {
             CookieCommand::Import {
                 partition: "p".to_owned(),
                 snapshot: CookieSnapshot {
-                    version: 1,
                     partition_key: "https://example.com".to_owned(),
                     cookies: vec![],
                 },

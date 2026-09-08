@@ -843,7 +843,7 @@ impl Builder {
         }
     }
 
-    /// Sellaro transport-v2: propagate an explicitly disabled retry policy to the pool.
+    /// Sellaro transport: propagate an explicitly disabled retry policy to the pool.
     pub(crate) fn retry_canceled_requests(mut self, enabled: bool) -> Self {
         self.config.retry_canceled_requests = enabled;
         self

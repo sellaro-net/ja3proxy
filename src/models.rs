@@ -1,4 +1,4 @@
-//! Strict transport-v2 wire DTOs. Credentials never appear in diagnostics.
+//! Strict transport wire DTOs. Credentials never appear in diagnostics.
 
 use serde::{Deserialize, Serialize};
 
@@ -90,7 +90,6 @@ pub struct Diagnostics {
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ResponseMetadata {
-    pub version: u8,
     pub request_id: String,
     pub status: u16,
     pub headers: Vec<(String, String)>,
