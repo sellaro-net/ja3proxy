@@ -1,4 +1,4 @@
-//! JA3Proxy transport v2: dedicated authentication and explicit isolated egress.
+//! JA3Proxy transport: dedicated authentication and explicit isolated egress.
 mod admission;
 mod auth;
 mod config;
@@ -28,7 +28,7 @@ use tracing::info;
 use tracing_subscriber::{EnvFilter, fmt, layer::SubscriberExt, util::SubscriberInitExt};
 
 pub fn router(state: AppState) -> Router {
-    let v2 = Router::new()
+    let api = Router::new()
         .route("/capabilities", get(capabilities_handler))
         .route("/request", post(request_handler))
         .route("/contexts", post(create_context_handler))
@@ -43,7 +43,7 @@ pub fn router(state: AppState) -> Router {
         ));
     Router::new()
         .route("/health", get(health_handler))
-        .nest("/v2", v2)
+        .merge(api)
         .with_state(state)
 }
 
@@ -67,7 +67,7 @@ async fn main() -> anyhow::Result<()> {
         max_concurrent = config.max_concurrent,
         max_queued = config.max_queued,
         allow_private_ips = config.allow_private_ips,
-        "JA3Proxy transport v2 wird gestartet"
+        "JA3Proxy transport wird gestartet"
     );
     let state = AppState::new(config);
     let listener = TcpListener::bind(address).await?;

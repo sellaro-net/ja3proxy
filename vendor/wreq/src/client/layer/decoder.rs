@@ -203,7 +203,7 @@ where
     }
 }
 
-// Sellaro transport-v2: decode unsolicited compressed responses without changing
+// Sellaro transport: decode unsolicited compressed responses without changing
 // the caller's header identity. tower-http generates Accept-Encoding internally,
 // so strip only that generated field immediately before the inner HTTP service.
 #[derive(Clone)]

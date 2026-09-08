@@ -1,4 +1,4 @@
-//! Bounded raw binary framing. No body-base64 copy or legacy JSON wire.
+//! Bounded raw binary framing without body-base64 copies.
 use crate::{
     error::{ErrorCode, TransportError},
     models::RequestMetadata,
@@ -11,7 +11,7 @@ use serde::Serialize;
 use std::sync::Arc;
 use tokio::sync::mpsc;
 
-pub const CONTENT_TYPE: &str = "application/vnd.ja3proxy.v2";
+pub const CONTENT_TYPE: &str = "application/vnd.ja3proxy";
 pub const MAX_METADATA_BYTES: usize = 65_536;
 pub const MAX_DATA_BYTES: usize = 65_536;
 pub const MAX_UPLOAD_FRAMES: usize = 65_536;

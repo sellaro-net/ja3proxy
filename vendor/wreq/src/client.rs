@@ -1591,7 +1591,7 @@ impl ClientBuilder {
 
     /// Require the resolver to approve every socket destination, including IP literals.
     ///
-    /// Sellaro transport-v2 patch: HTTP proxies use numeric CONNECT targets for both
+    /// Sellaro transport patch: HTTP proxies use numeric CONNECT targets for both
     /// HTTP and HTTPS; SOCKS remote-DNS modes also use locally approved numeric targets.
     /// The original request authority remains unchanged for Host, SNI and certificate
     /// verification. CONNECT rejection fails closed, without forward-proxy fallback.
@@ -1602,7 +1602,7 @@ impl ClientBuilder {
 
     /// Control generated Accept-Encoding headers independently of response decoding.
     ///
-    /// Sellaro transport-v2 patch: false preserves absent caller headers, including
+    /// Sellaro transport patch: false preserves absent caller headers, including
     /// Range requests, while keeping configured response decompression enabled.
     pub fn auto_accept_encoding(mut self, enabled: bool) -> ClientBuilder {
         self.config.auto_accept_encoding = enabled;
