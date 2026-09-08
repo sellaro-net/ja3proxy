@@ -23,9 +23,9 @@ try {
   await cp(join(packageDirectory, 'LICENSE'), join(temporary, 'LICENSE'));
   await writeFile(join(temporary, 'package.json'), `${JSON.stringify(staged, null, 2)}\n`);
   assertPackagePolicy(staged, release);
-  const packed = JSON.parse(npm(['pack', '--ignore-scripts', '--json', '--pack-destination', artifactDirectory], {
+  const packed = Object.values(JSON.parse(npm(['pack', '--ignore-scripts', '--json', '--pack-destination', artifactDirectory], {
     cwd: temporary, encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'],
-  }).stdout);
+  }).stdout));
   assert.equal(packed.length, 1);
   assert.equal(join(artifactDirectory, packed[0].filename), artifactPath);
   const files = new Set(packed[0].files.map(file => file.path));

@@ -46,8 +46,8 @@ jobs:
         with:
           node-version-file: .node-version
           package-manager-cache: false
-      - name: Install pinned workspace manager
-        run: npm install --global pnpm@11.15.1 --ignore-scripts --no-audit --no-fund
+      - name: Install pinned npm release tooling and workspace manager
+        run: npm install --global npm@12.0.2 pnpm@11.15.1 --ignore-scripts --no-audit --no-fund
       - name: Install locked development dependencies without lifecycle scripts
         run: pnpm install --frozen-lockfile --ignore-scripts
       - name: Check generated TypeScript and Rust parity fixtures
@@ -82,8 +82,8 @@ jobs:
         with:
           node-version-file: .node-version
           package-manager-cache: false
-      - name: Install pinned workspace manager
-        run: npm install --global pnpm@11.15.1 --ignore-scripts --no-audit --no-fund
+      - name: Install pinned npm release tooling and workspace manager
+        run: npm install --global npm@12.0.2 pnpm@11.15.1 --ignore-scripts --no-audit --no-fund
       - name: Install locked development dependencies
         run: pnpm install --frozen-lockfile --ignore-scripts
       - name: Check known dependency vulnerabilities
