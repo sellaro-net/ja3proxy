@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "upstream": {
+    "crate": "wreq",
+    "version": "0.16.1",
+    "archive": "https://static.crates.io/crates/wreq/wreq-0.16.1.crate",
+    "registry": "https://index.crates.io/wr/eq/wreq",
+    "sha256": "16454175c8cb23d4a7285bab53b72460686195f5aef655d1abad70ab97ef46d4",
+    "checksumVerifiedAgainstRegistry": true,
+    "license": "Apache-2.0"
+  },
+  "contents": "Published src tree, Cargo manifest, LICENSE and upstream .cargo_vcs_info.json; upstream examples, README and lockfile excluded. Manifest readme field disabled and README include removed accordingly.",
+  "patches": [
+    {
+      "api": "ClientBuilder::resolver_enforced_egress(bool)",
+      "default": false,
+      "files": ["src/client.rs", "src/conn/connector.rs", "src/conn/http.rs"],
+      "purpose": "Invoke configured resolver for literal sockets as well as DNS names. Preserve original request authority while tunneling HTTP and HTTPS through numeric CONNECT targets. Force all SOCKS modes to locally resolved numeric targets. No forward-proxy or direct fallback. Disable ALPN only on outer HTTPS-proxy TLS leg because tunnel handshake is HTTP/1.1; origin browser TLS settings remain intact."
+    },
+    {
+      "api": "ClientBuilder::auto_accept_encoding(bool)",
+      "default": true,
+      "files": ["src/client.rs", "src/client/layer/decoder.rs"],
+      "purpose": "Allow response decompression without silently generating Accept-Encoding or changing caller Range header identity. Strip only decoder-generated headers before the inner HTTP service."
+    },
+    {
+      "api": "Existing retry::Policy::never()",
+      "files": ["src/client.rs", "src/client/layer/client.rs"],
+      "purpose": "Propagate disabled retries to previously independent pool canceled-request retry behavior. When pool checkout wins, drop the losing speculative connection future instead of detaching it, so connector sockets, proxy credentials and strong pool references remain request/context-owned. The default retry-enabled policy retains upstream background-connect behavior."
+    },
+    {
+      "files": ["src/conn/proxy/socks.rs"],
+      "purpose": "Preserve typed nested error causes for safe SSRF/DNS classification; select IPv4 from fully validated answers for SOCKS4; honor supported SOCKS4 user-ID authentication on existing sockets."
+    },
+    {
+      "files": ["src/conn/proxy/tunnel.rs"],
+      "purpose": "Bound untrusted CONNECT response headers to 16384 bytes."
+    }
+  ],
+  "securityBoundary": "Application guarded resolver validates the entire DNS answer before returning any address. Connector consumes those exact approved addresses for service-owned TCP sockets and numeric CONNECT/SOCKS requests. Origin Host/SNI and certificate verification are unchanged. A remote proxy must obey the numeric target; this service cannot attest a malicious proxy's own remote socket. Remote-DNS proxy schemes remain accepted but intentionally use local guarded resolution.",
+  "logging": "Service code never renders source errors, URLs, queries or proxy credentials. wreq tracing feature is not enabled by the service; do not enable dependency wire tracing in deployments containing secrets.",
+  "regressions": "../../src/network/tests.rs and ../../src/validation.rs",
+  "refreshRequirement": "Reverify a new upstream crate checksum, review each patch against upstream connector/layer changes, and rerun loopback security, proxy, pooling (including delayed speculative connector cancellation on context close), TLS and header-identity regressions before removing or rebasing this override."
+}

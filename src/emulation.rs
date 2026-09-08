@@ -1,43 +1,77 @@
-//! Runtime TLS profile mapping backed by wreq-util's profile registry.
-//!
-//! The public API remains string-based because callers select profiles over
-//! JSON. Parsing and profile discovery both use wreq-util's canonical serde
-//! names, so the endpoint cannot drift from the pinned emulation release.
+//! Canonical profile and header discovery from the exact pinned emulation registry.
 
+use crate::error::{ErrorCode, TransportError};
+use serde::Serialize;
+use wreq::IntoEmulation;
 use wreq_util::Profile;
 
-/// Parse a TLS profile string into its canonical profile.
-///
-/// # Arguments
-/// * `profile` - Profile string like "chrome_131", "firefox_139", etc.
-///
-/// # Returns
-/// * `Ok(Profile)` if the profile is valid
-/// * `Err(String)` with the invalid profile name if not found
-///
-/// # Example
-/// ```
-/// let emulation = parse_tls_profile("chrome_131").unwrap();
-/// ```
-pub fn parse_tls_profile(profile: &str) -> Result<Profile, String> {
-    serde_json::from_str(&format!("\"{profile}\"")).map_err(|_| profile.to_owned())
+pub fn parse_tls_profile(profile: &str) -> Result<Profile, TransportError> {
+    // Parse a JSON string value, never interpolate untrusted text into JSON syntax.
+    let parsed: Profile = serde_json::from_value(serde_json::Value::String(profile.to_owned()))
+        .map_err(|_| TransportError::from_code(ErrorCode::InvalidProfile))?;
+    if serde_json::to_value(parsed)
+        .ok()
+        .and_then(|v| v.as_str().map(str::to_owned))
+        .as_deref()
+        != Some(profile)
+    {
+        return Err(TransportError::from_code(ErrorCode::InvalidProfile));
+    }
+    Ok(parsed)
 }
 
-/// Get every canonical TLS profile name exposed by the pinned wreq-util release.
-///
-/// Use the upstream registry so profile discovery stays aligned with parsing.
-/// A vector of profile names like ["chrome_100", "chrome_101", ..., "firefox_139"]
 pub fn available_profiles() -> Vec<String> {
     Profile::VARIANTS
         .iter()
-        .filter_map(|profile| serde_json::to_string(profile).ok())
-        .map(|profile| profile.trim_matches('"').to_owned())
+        .map(|profile| {
+            serde_json::to_value(profile)
+                .expect("profile registry serializes")
+                .as_str()
+                .expect("profile registry uses strings")
+                .to_owned()
+        })
         .collect()
 }
 
-/// Get the newest Chrome profile shipped by the pinned wreq-util release.
-pub const fn default_profile() -> Profile {
-    Profile::Chrome149
+pub(crate) fn profile_emulation(profile: Profile, headers: bool) -> wreq::Emulation {
+    wreq_util::Emulation::builder()
+        .profile(profile)
+        .headers(headers)
+        .build()
+        .into_emulation()
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HeaderDescriptor {
+    tls_profile: String,
+    headers: Vec<(String, String)>,
+}
+
+pub fn header_descriptors() -> Vec<HeaderDescriptor> {
+    Profile::VARIANTS
+        .iter()
+        .zip(available_profiles())
+        .map(|(profile, tls_profile)| {
+            let emulation = profile_emulation(*profile, true);
+            HeaderDescriptor {
+                tls_profile,
+                headers: emulation
+                    .headers
+                    .iter()
+                    .map(|(name, value)| {
+                        (
+                            name.as_str().to_owned(),
+                            value
+                                .to_str()
+                                .expect("static profile header is ASCII")
+                                .to_owned(),
+                        )
+                    })
+                    .collect(),
+            }
+        })
+        .collect()
 }
 
 #[cfg(test)]
@@ -45,31 +79,20 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_parse_chrome_profile() {
-        let result = parse_tls_profile("chrome_131");
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_parse_firefox_profile() {
-        let result = parse_tls_profile("firefox_139");
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn preserves_profiles_required_by_sellaro() {
-        for profile in ["okhttp_4.12", "chrome_120", "chrome_133"] {
-            assert!(
-                parse_tls_profile(profile).is_ok(),
-                "required profile {profile} is missing"
+    fn sellaro_profiles_remain_canonical_and_injection_is_rejected() {
+        for name in ["okhttp_4.12", "chrome_120", "chrome_133", "safari_ios_17.2"] {
+            assert!(parse_tls_profile(name).is_ok());
+        }
+        for name in [
+            "chrome_133\"",
+            "chrome_133\\u0022",
+            "Chrome133",
+            " chrome_133",
+        ] {
+            assert_eq!(
+                parse_tls_profile(name).unwrap_err().code,
+                ErrorCode::InvalidProfile
             );
         }
-    }
-
-    #[test]
-    fn test_parse_invalid_profile() {
-        let result = parse_tls_profile("invalid_999");
-        assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), "invalid_999");
     }
 }

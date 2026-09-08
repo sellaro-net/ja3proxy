@@ -100,20 +100,60 @@ jobs:
             docker rm -f "$container" >/dev/null 2>&1 || true
           }
           trap cleanup EXIT
+          export JA3_PROXY_TOKEN
+          JA3_PROXY_TOKEN=$(openssl rand -hex 32)
           docker run -d --name "$container" \
             --read-only --cap-drop ALL --security-opt no-new-privileges \
             --tmpfs /tmp:rw,noexec,nosuid,size=16m \
+            --env JA3_PROXY_TOKEN \
             --publish 127.0.0.1::8080 "ja3proxy-ci:${GITHUB_SHA}"
           binding=$(docker port "$container" 8080/tcp)
           port="${binding##*:}"
           curl -fsS --retry 30 --retry-delay 1 --retry-connrefused --max-time 2 \
             "http://127.0.0.1:${port}/health" | jq -e '.status == "ok"'
           test "$(docker exec "$container" id -u)" -ne 0
-          status=$(curl -sS -o "$RUNNER_TEMP/ssrf-response.json" -w '%{http_code}' \
-            -H 'Content-Type: application/json' \
-            --data '{"url":"http://127.0.0.1:1/","method":"GET"}' \
-            "http://127.0.0.1:${port}/request")
-          test "$status" = 400
+          export JA3_PROXY_PORT="$port"
+          python3 - <<'PY'
+          import json
+          import os
+          import struct
+          import urllib.error
+          import urllib.request
+
+          base = "http://127.0.0.1:" + os.environ["JA3_PROXY_PORT"]
+          try:
+              urllib.request.urlopen(base + "/v2/capabilities", timeout=5)
+              raise AssertionError("v2 accepted an unauthenticated request")
+          except urllib.error.HTTPError as error:
+              assert error.code == 401
+          headers = {"Authorization": "Bearer " + os.environ["JA3_PROXY_TOKEN"]}
+          request = urllib.request.Request(base + "/v2/capabilities", headers=headers)
+          with urllib.request.urlopen(request, timeout=5) as response:
+              capabilities = json.load(response)
+          assert capabilities["version"] == 2
+          assert "chrome_120" in capabilities["profiles"]
+          assert capabilities["framing"]["maxDataBytes"] == 65536
+          metadata = json.dumps({
+              "requestId": "ci-ssrf-boundary", "partition": "ci-isolated",
+              "url": "http://127.0.0.1:1/", "method": "GET", "headers": [],
+              "hasBody": False, "timeoutMs": 5000, "maxResponseBytes": 1024, "attempt": 0,
+              "connection": {"egress": {"mode": "direct"}, "identity": {
+                  "tlsProfile": "chrome_120", "emulateHeaders": False}}
+          }).encode()
+          wire = struct.pack(">BI", 1, len(metadata)) + metadata + struct.pack(">BI", 3, 0)
+          headers["Content-Type"] = "application/vnd.ja3proxy.v2"
+          request = urllib.request.Request(base + "/v2/request", data=wire, headers=headers)
+          with urllib.request.urlopen(request, timeout=10) as response:
+              assert response.status == 200
+              wire = response.read(65542)
+          assert len(wire) >= 5
+          kind, length = struct.unpack(">BI", wire[:5])
+          assert kind == 4 and length <= 65536 and len(wire) == length + 5
+          error = json.loads(wire[5:])
+          assert error["code"] == "SSRF_BLOCKED", error["code"]
+          assert error["diagnostics"]["requestId"] == "ci-ssrf-boundary"
+          print("Authenticated v2 capabilities, terminal error framing and socket-bound SSRF verified")
+          PY
 
   build:
     name: Build ${{ matrix.arch }}

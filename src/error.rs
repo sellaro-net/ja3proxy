@@ -1,168 +1,162 @@
-//! Error types and error codes for the proxy service
+//! Stable safe API errors. Never serialize a source error, destination or credentials.
 
+use crate::models::Diagnostics;
 use axum::{
     Json,
     http::StatusCode,
     response::{IntoResponse, Response},
 };
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::fmt;
 
-/// Error codes returned by the API
-#[derive(Debug, Clone, Copy, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
-#[allow(dead_code)]
 pub enum ErrorCode {
-    /// Connection timeout
-    Timeout,
-    /// DNS resolution failed
-    DnsError,
-    /// SSL/TLS error
-    TlsError,
-    /// Invalid or unreachable proxy
-    ProxyError,
-    /// Request was cancelled
-    Cancelled,
-    /// Invalid TLS profile specified
-    InvalidProfile,
-    /// Invalid request parameters
+    Unauthorized,
     InvalidRequest,
-    /// Unknown/internal error
+    UnsupportedCapability,
+    InvalidProfile,
+    EgressRequired,
+    SsrfBlocked,
+    BodyTooLarge,
+    Busy,
+    Timeout,
+    Cancelled,
+    DnsError,
+    ProxyError,
+    TlsError,
+    ConnectError,
+    ProtocolError,
+    ContextNotFound,
+    ContextConflict,
+    ContextLimit,
+    CookieLimit,
+    DuplicateRequest,
     Unknown,
 }
 
-impl fmt::Display for ErrorCode {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl ErrorCode {
+    pub fn message(self) -> &'static str {
         match self {
-            ErrorCode::Timeout => write!(f, "TIMEOUT"),
-            ErrorCode::DnsError => write!(f, "DNS_ERROR"),
-            ErrorCode::TlsError => write!(f, "TLS_ERROR"),
-            ErrorCode::ProxyError => write!(f, "PROXY_ERROR"),
-            ErrorCode::Cancelled => write!(f, "CANCELLED"),
-            ErrorCode::InvalidProfile => write!(f, "INVALID_PROFILE"),
-            ErrorCode::InvalidRequest => write!(f, "INVALID_REQUEST"),
-            ErrorCode::Unknown => write!(f, "UNKNOWN"),
+            Self::Unauthorized => "Die Dienstauthentifizierung ist ungültig.",
+            Self::InvalidRequest => "Die Anfrage ist ungültig.",
+            Self::UnsupportedCapability => {
+                "Die angeforderte Transportfunktion wird nicht unterstützt."
+            }
+            Self::InvalidProfile => "Das TLS-Profil wird nicht unterstützt.",
+            Self::EgressRequired => "Ein expliziter Verbindungsweg ist erforderlich.",
+            Self::SsrfBlocked => "Das Verbindungsziel ist durch die Netzwerkrichtlinie gesperrt.",
+            Self::BodyTooLarge => "Die zulässige Anzahl an Nutzdatenbytes wurde überschritten.",
+            Self::Busy => "Die begrenzte Transportkapazität ist ausgelastet.",
+            Self::Timeout => "Das gesamte Zeitbudget der Anfrage wurde überschritten.",
+            Self::Cancelled => "Die Anfrage wurde abgebrochen.",
+            Self::DnsError => "Die Namensauflösung ist fehlgeschlagen.",
+            Self::ProxyError => "Die Verbindung zum Proxy ist fehlgeschlagen.",
+            Self::TlsError => "Die TLS-Verbindung ist fehlgeschlagen.",
+            Self::ConnectError => "Die Verbindung zum Ziel ist fehlgeschlagen.",
+            Self::ProtocolError => "Der Transportdatenstrom ist ungültig oder unvollständig.",
+            Self::ContextNotFound => "Der Transportkontext ist nicht verfügbar.",
+            Self::ContextConflict => "Der Transportkontext oder seine Revision ist unvereinbar.",
+            Self::ContextLimit => "Die zulässige Anzahl an Transportkontexten wurde erreicht.",
+            Self::CookieLimit => "Die zulässige Cookie-Grenze wurde überschritten.",
+            Self::DuplicateRequest => "Die Anfragekennung wurde bereits verwendet.",
+            Self::Unknown => "Ein interner Transportfehler ist aufgetreten.",
+        }
+    }
+
+    fn status(self) -> StatusCode {
+        match self {
+            Self::Unauthorized => StatusCode::UNAUTHORIZED,
+            Self::Busy | Self::ContextLimit => StatusCode::TOO_MANY_REQUESTS,
+            Self::Timeout => StatusCode::GATEWAY_TIMEOUT,
+            Self::ContextNotFound => StatusCode::NOT_FOUND,
+            Self::ContextConflict | Self::DuplicateRequest => StatusCode::CONFLICT,
+            Self::BodyTooLarge | Self::CookieLimit => StatusCode::PAYLOAD_TOO_LARGE,
+            Self::DnsError | Self::ProxyError | Self::TlsError | Self::ConnectError => {
+                StatusCode::BAD_GATEWAY
+            }
+            Self::Unknown => StatusCode::INTERNAL_SERVER_ERROR,
+            _ => StatusCode::BAD_REQUEST,
         }
     }
 }
 
-/// Standard error response
-#[derive(Debug, Serialize)]
-pub struct ErrorResponse {
-    pub error: String,
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct TransportError {
     pub code: ErrorCode,
+    pub message: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub available_profiles: Option<Vec<String>>,
+    pub diagnostics: Option<Box<Diagnostics>>,
 }
 
-impl ErrorResponse {
-    pub fn new(error: impl Into<String>, code: ErrorCode) -> Self {
+impl TransportError {
+    pub fn new(code: ErrorCode, message: impl Into<String>) -> Self {
         Self {
-            error: error.into(),
             code,
-            available_profiles: None,
+            message: message.into(),
+            diagnostics: None,
         }
     }
 
-    pub fn with_profiles(mut self, profiles: Vec<String>) -> Self {
-        self.available_profiles = Some(profiles);
+    pub fn from_code(code: ErrorCode) -> Self {
+        Self::new(code, code.message())
+    }
+
+    pub fn with_diagnostics(mut self, diagnostics: Diagnostics) -> Self {
+        self.diagnostics = Some(Box::new(diagnostics));
         self
     }
 }
 
-/// Proxy error with HTTP status code
-#[derive(Debug)]
-pub struct ProxyError {
-    pub status: StatusCode,
-    pub response: ErrorResponse,
-}
-
-#[allow(dead_code)]
-impl ProxyError {
-    pub fn new(status: StatusCode, error: impl Into<String>, code: ErrorCode) -> Self {
-        Self {
-            status,
-            response: ErrorResponse::new(error, code),
-        }
-    }
-
-    pub fn timeout(message: impl Into<String>) -> Self {
-        Self::new(StatusCode::GATEWAY_TIMEOUT, message, ErrorCode::Timeout)
-    }
-
-    pub fn dns_error(message: impl Into<String>) -> Self {
-        Self::new(StatusCode::BAD_GATEWAY, message, ErrorCode::DnsError)
-    }
-
-    pub fn tls_error(message: impl Into<String>) -> Self {
-        Self::new(StatusCode::BAD_GATEWAY, message, ErrorCode::TlsError)
-    }
-
-    pub fn proxy_failure(message: impl Into<String>) -> Self {
-        Self::new(StatusCode::BAD_GATEWAY, message, ErrorCode::ProxyError)
-    }
-
-    pub fn invalid_profile(profile: &str, available: Vec<String>) -> Self {
-        Self {
-            status: StatusCode::BAD_REQUEST,
-            response: ErrorResponse::new(
-                format!("Unknown TLS profile: {}", profile),
-                ErrorCode::InvalidProfile,
-            )
-            .with_profiles(available),
-        }
-    }
-
-    pub fn invalid_request(message: impl Into<String>) -> Self {
-        Self::new(StatusCode::BAD_REQUEST, message, ErrorCode::InvalidRequest)
-    }
-
-    pub fn unknown(message: impl Into<String>) -> Self {
-        Self::new(
-            StatusCode::INTERNAL_SERVER_ERROR,
-            message,
-            ErrorCode::Unknown,
-        )
-    }
-}
-
-impl IntoResponse for ProxyError {
+impl IntoResponse for TransportError {
     fn into_response(self) -> Response {
-        (self.status, Json(self.response)).into_response()
+        let mut response = (self.code.status(), Json(self)).into_response();
+        response
+            .headers_mut()
+            .insert("cache-control", "no-store".parse().unwrap());
+        response
     }
 }
 
-impl fmt::Display for ProxyError {
+impl fmt::Display for TransportError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}: {}", self.response.code, self.response.error)
+        f.write_str(self.code.message())
     }
 }
+impl std::error::Error for TransportError {}
 
-impl std::error::Error for ProxyError {}
-
-/// Classify wreq errors into appropriate error codes
+/// Classify typed backend errors, including btls handshake errors nested under connect.
 pub fn classify_wreq_error(err: &wreq::Error) -> (ErrorCode, String) {
-    let message = err.to_string();
-    let (code, label) = if err.is_timeout() {
-        (ErrorCode::Timeout, "Connection timeout")
+    if let Some(error) =
+        std::iter::successors(std::error::Error::source(err), |cause| cause.source())
+            .find_map(|cause| cause.downcast_ref::<TransportError>())
+    {
+        return (error.code, error.code.message().to_owned());
+    }
+    let code = if err.is_timeout() {
+        ErrorCode::Timeout
     } else if err.is_dns() {
-        (ErrorCode::DnsError, "DNS resolution failed")
+        ErrorCode::DnsError
     } else if err.is_tls()
         || std::iter::successors(std::error::Error::source(err), |cause| cause.source())
             .any(|cause| cause.is::<btls::ssl::Error>())
     {
-        // Handshake failures are nested connection errors, not top-level TLS errors.
-        (ErrorCode::TlsError, "TLS error")
+        ErrorCode::TlsError
     } else if err.is_proxy_connect() {
-        (ErrorCode::ProxyError, "Proxy connection failed")
+        ErrorCode::ProxyError
     } else if err.is_connect() {
-        (ErrorCode::Unknown, "Connection error")
+        ErrorCode::ConnectError
     } else if err.is_request() {
-        (ErrorCode::InvalidRequest, "Invalid request")
+        ErrorCode::InvalidRequest
     } else {
-        return (ErrorCode::Unknown, message);
+        ErrorCode::ProtocolError
     };
-    (code, format!("{label}: {message}"))
+    (code, code.message().to_owned())
+}
+
+pub fn from_wreq(error: &wreq::Error) -> TransportError {
+    let (code, message) = classify_wreq_error(error);
+    TransportError::new(code, message)
 }
 
 #[cfg(test)]
@@ -200,7 +194,8 @@ mod tests {
             .await
             .unwrap()
             .unwrap();
-        let (code, _) = classify_wreq_error(&error);
-        assert!(matches!(code, ErrorCode::TlsError), "{code:?}: {error:?}");
+        let (code, message) = classify_wreq_error(&error);
+        assert_eq!(code, ErrorCode::TlsError);
+        assert!(!message.contains(&address.to_string()));
     }
 }

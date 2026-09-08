@@ -1,123 +1,120 @@
-//! JA3Proxy - TLS-Impersonate HTTP Proxy Service
-//!
-//! A high-performance HTTP API service that forwards requests with Chrome/Firefox
-//! TLS fingerprinting (JA3/JA4) to bypass bot detection systems.
-
+//! JA3Proxy transport v2: dedicated authentication and explicit isolated egress.
+mod admission;
+mod auth;
 mod config;
+mod contexts;
 mod emulation;
 mod error;
 mod handlers;
 mod models;
+mod network;
+mod protocol;
+mod registry;
 mod validation;
-
-use axum::{
-    Router,
-    extract::DefaultBodyLimit,
-    routing::{get, post},
-};
-use std::{net::SocketAddr, time::Duration};
-use tokio::{net::TcpListener, signal};
-use tower_http::trace::TraceLayer;
-use tracing::info;
-use tracing_subscriber::{EnvFilter, fmt, layer::SubscriberExt, util::SubscriberInitExt};
 
 use crate::{
     config::Config,
-    handlers::{AppState, health_handler, request_handler},
+    error::{ErrorCode, TransportError},
+    handlers::*,
 };
+use axum::{
+    Router, middleware,
+    routing::{delete, get, post},
+};
+use std::{net::SocketAddr, time::Duration};
+use tokio::{net::TcpListener, signal};
+use tokio_util::sync::CancellationToken;
+use tracing::info;
+use tracing_subscriber::{EnvFilter, fmt, layer::SubscriberExt, util::SubscriberInitExt};
 
-/// Create the timeout layer (separate function to allow #[allow(deprecated)])
-#[allow(deprecated)]
-fn create_timeout_layer(timeout_secs: u64) -> tower_http::timeout::TimeoutLayer {
-    tower_http::timeout::TimeoutLayer::new(Duration::from_secs(timeout_secs))
+pub fn router(state: AppState) -> Router {
+    let v2 = Router::new()
+        .route("/capabilities", get(capabilities_handler))
+        .route("/request", post(request_handler))
+        .route("/contexts", post(create_context_handler))
+        .route("/contexts/{id}", delete(close_context_handler))
+        .route("/contexts/{id}/cookies", post(cookies_handler))
+        .route("/requests/{id}", delete(cancel_handler))
+        .route("/requests/{id}/status", post(status_handler))
+        .fallback(|| async { TransportError::from_code(ErrorCode::UnsupportedCapability) })
+        .layer(middleware::from_fn_with_state(
+            state.clone(),
+            auth::authenticate,
+        ));
+    Router::new()
+        .route("/health", get(health_handler))
+        .nest("/v2", v2)
+        .with_state(state)
 }
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    // Load configuration from environment
-    let config = Config::from_env();
-
-    // Initialize tracing/logging
-    let filter =
-        EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new(&config.log_level));
-
+    let config = Config::from_env()?;
+    let level = config
+        .log_level
+        .parse::<tracing::level_filters::LevelFilter>()
+        .map_err(|_| anyhow::anyhow!("LOG_LEVEL ist ungültig."))?;
+    // Backend trace/debug events may contain credential-bearing URLs or headers.
+    // Only this crate's deliberately safe structured events are enabled.
+    let filter = EnvFilter::new(format!("off,ja3proxy={level}"));
     tracing_subscriber::registry()
         .with(filter)
         .with(fmt::layer())
         .init();
-
+    let address = SocketAddr::from(([0, 0, 0, 0], config.port));
     info!(
         version = env!("CARGO_PKG_VERSION"),
-        port = config.port,
         max_concurrent = config.max_concurrent,
-        default_timeout = config.default_timeout,
-        max_request_body_size = config.max_request_body_size,
-        max_response_body_size = config.max_response_body_size,
-        server_timeout = config.server_timeout,
+        max_queued = config.max_queued,
         allow_private_ips = config.allow_private_ips,
-        "Starting JA3Proxy"
+        "JA3Proxy transport v2 wird gestartet"
     );
-
-    // Log available profiles at startup
-    let profiles = emulation::available_profiles();
-    info!(profile_count = profiles.len(), "Loaded TLS profiles");
-
-    // Create shared application state
-    let state = AppState::new(config.clone());
-
-    // Build router with layers applied in correct order
-    // Note: Layers are applied bottom-up, so the last layer added is the outermost
-    let app = Router::new()
-        .route("/health", get(health_handler))
-        .route("/request", post(request_handler))
-        .with_state(state)
-        // Limit request body size (protects against large payload attacks)
-        .layer(DefaultBodyLimit::max(config.max_request_body_size))
-        // Request tracing
-        .layer(TraceLayer::new_for_http())
-        // Server-side request timeout (protects against slow clients)
-        .layer(create_timeout_layer(config.server_timeout));
-
-    // Bind to address
-    let addr = SocketAddr::from(([0, 0, 0, 0], config.port));
-    let listener = TcpListener::bind(addr).await?;
-
-    info!(address = %addr, "Server listening");
-
-    // Run server with graceful shutdown
-    axum::serve(listener, app)
-        .with_graceful_shutdown(shutdown_signal())
-        .await?;
-
-    info!("Server shutdown complete");
+    let state = AppState::new(config);
+    let listener = TcpListener::bind(address).await?;
+    let stop = CancellationToken::new();
+    let cleanup_stop = stop.clone();
+    let cleanup_state = state.clone();
+    let cleanup = tokio::spawn(async move {
+        let mut interval = tokio::time::interval(Duration::from_secs(1));
+        loop {
+            tokio::select! {
+                _ = cleanup_stop.cancelled() => break,
+                _ = interval.tick() => {
+                    cleanup_state.contexts.cleanup().await;
+                    cleanup_state.registry.cleanup();
+                }
+            }
+        }
+    });
+    let shutdown_state = state.clone();
+    let result = axum::serve(listener, router(state))
+        .with_graceful_shutdown(async move {
+            shutdown_signal().await;
+            shutdown_state.registry.shutdown();
+            shutdown_state.contexts.shutdown().await;
+        })
+        .await;
+    stop.cancel();
+    let _ = cleanup.await;
+    result?;
     Ok(())
 }
 
-/// Wait for shutdown signals (Ctrl+C or SIGTERM)
 async fn shutdown_signal() {
     let ctrl_c = async {
         signal::ctrl_c()
             .await
-            .expect("Failed to install Ctrl+C handler");
+            .expect("Signalhandler konnte nicht installiert werden");
     };
-
     #[cfg(unix)]
     let terminate = async {
         signal::unix::signal(signal::unix::SignalKind::terminate())
-            .expect("Failed to install signal handler")
+            .expect("Signalhandler konnte nicht installiert werden")
             .recv()
             .await;
     };
-
     #[cfg(not(unix))]
     let terminate = std::future::pending::<()>();
-
-    tokio::select! {
-        _ = ctrl_c => {
-            info!("Received Ctrl+C, shutting down...");
-        }
-        _ = terminate => {
-            info!("Received SIGTERM, shutting down...");
-        }
-    }
+    tokio::select! { _ = ctrl_c => {}, _ = terminate => {} }
+    info!("Dienst wird beendet");
 }

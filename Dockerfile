@@ -15,6 +15,7 @@ COPY rust-toolchain.toml ./
 RUN rustup show active-toolchain
 
 COPY Cargo.toml Cargo.lock ./
+COPY vendor ./vendor
 COPY src ./src
 # Compile the real source once. A cached dummy main must never become the
 # shipped executable; target caches remain isolated between architectures.
@@ -38,10 +39,13 @@ EXPOSE 8080
 ENV PORT=8080 \
     LOG_LEVEL=info \
     MAX_CONCURRENT=100 \
-    DEFAULT_TIMEOUT=30 \
+    MAX_CONCURRENT_PER_PARTITION=4 \
+    MAX_QUEUED=256 \
+    MAX_QUEUED_PER_PARTITION=16 \
     MAX_REQUEST_BODY_SIZE=10485760 \
     MAX_RESPONSE_BODY_SIZE=52428800 \
-    SERVER_TIMEOUT=120 \
+    MAX_TIMEOUT_MS=120000 \
+    ENVELOPE_TIMEOUT_MS=5000 \
     ALLOW_PRIVATE_IPS=false
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \

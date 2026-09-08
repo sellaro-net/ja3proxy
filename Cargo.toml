@@ -1,6 +1,6 @@
 [package]
 name = "ja3proxy"
-version = "1.0.0"
+version = "2.0.0"
 edition = "2024"
 rust-version = "1.98.1"
 description = "TLS-Impersonate HTTP Proxy Service with JA3/JA4 fingerprinting"
@@ -13,23 +13,29 @@ readme = "README.md"
 tokio = { version = "1.53.1", features = ["full"] }
 
 # HTTP client and browser emulation use upstream's renumbered stable release pair.
-wreq = { version = "0.16.1", features = ["json", "socks", "gzip", "brotli", "zstd", "deflate", "stream"] }
+wreq = { version = "=0.16.1", features = ["json", "socks", "gzip", "brotli", "zstd", "deflate", "stream"] }
 wreq-util = { version = "0.2.0", features = ["emulation-serde", "emulation-compression"] }
 # Inspect the existing TLS backend's typed errors instead of matching error text.
 btls = { version = "0.5.6", default-features = false }
 futures-util = "0.3.34"
+bytes = "1"
+async-stream = "0.3"
+tokio-util = { version = "0.7", features = ["rt"] }
+subtle = "2"
+cookie_store = { version = "0.22", default-features = false }
+cookie = "0.18"
+psl = "2"
+time = "0.3"
+uuid = { version = "1", features = ["v4"] }
+parking_lot = "0.12"
+percent-encoding = "2.3.2"
 
 # Web Framework
 axum = { version = "0.8.9", features = ["json"] }
-tower = { version = "0.5.3", features = ["limit", "timeout"] }
-tower-http = { version = "0.7.1", features = ["trace", "limit", "timeout"] }
 
 # Serialization
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.151"
-
-# Base64 for binary responses
-base64 = "0.23.1"
 
 # URL parsing for SSRF protection
 url = "2.5.8"
@@ -41,8 +47,16 @@ tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 # Error handling
 anyhow = "1.0.104"
 
+[dev-dependencies]
+tokio-btls = "0.5.6"
+rcgen = "0.14"
+flate2 = "1"
+
 [profile.release]
 lto = true
 codegen-units = 1
 panic = "abort"
 strip = true
+
+[patch.crates-io]
+wreq = { path = "vendor/wreq" }
