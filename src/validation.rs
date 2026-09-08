@@ -68,15 +68,15 @@ pub fn validate_url(url_str: &str, config: &Config) -> Result<Url, ProxyError> {
             let port = url.port_or_known_default().unwrap_or(80);
             let addr = format!("{}:{}", host, port);
 
-            if let Ok(mut addrs) = addr.to_socket_addrs() {
-                if let Some(socket_addr) = addrs.next() {
-                    let ip = socket_addr.ip();
-                    if is_ip_blocked(&ip, config) {
-                        return Err(ProxyError::invalid_request(format!(
-                            "Hostname '{}' resolves to blocked IP '{}'. Private/internal IPs are not allowed.",
-                            host, ip
-                        )));
-                    }
+            if let Ok(mut addrs) = addr.to_socket_addrs()
+                && let Some(socket_addr) = addrs.next()
+            {
+                let ip = socket_addr.ip();
+                if is_ip_blocked(&ip, config) {
+                    return Err(ProxyError::invalid_request(format!(
+                        "Hostname '{}' resolves to blocked IP '{}'. Private/internal IPs are not allowed.",
+                        host, ip
+                    )));
                 }
             }
             // Note: If DNS resolution fails, we let wreq handle it and return appropriate error
