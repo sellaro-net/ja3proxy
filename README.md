@@ -179,8 +179,14 @@ The source manifest intentionally remains `private: true`. Checked development
 packs remain private too; only an explicitly approved isolated release copy is
 public. Package scripts and development dependencies never enter that copy.
 
-The first real publication uses the owner's interactive `npm login`, not a
-placeholder package or forged CI environment. From the clean, reviewed commit
+The first real publication uses local owner authorization, not a placeholder
+package or forged CI environment. Interactive `npm login` is the default.
+Alternatively, the owner may explicitly authorize a one-time scoped token:
+set `SDK_BOOTSTRAP_AUTH_MODE=owner-token` and `NPM_CONFIG_USERCONFIG` to a
+temporary npm configuration file outside the repository. Never put credentials
+in source files or `NPM_TOKEN`/`NODE_AUTH_TOKEN`; delete that temporary
+configuration after use and revoke the bootstrap token.
+From the clean, reviewed commit
 already integrated into `main`, explicitly set `SDK_RELEASE_APPROVED_LICENSE`,
 `SDK_RELEASE_APPROVED_VERSION`, `SDK_RELEASE_APPROVED_SHA` and
 `SDK_BOOTSTRAP_NPM_USER` to the approved license, version, full commit and npm

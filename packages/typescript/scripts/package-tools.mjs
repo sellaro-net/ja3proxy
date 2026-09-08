@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs';
 import { createRequire } from 'node:module';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
@@ -62,12 +62,23 @@ export function assertReleaseApproval() {
 }
 
 // The first real package cannot have an npm trusted publisher before it exists.
-// This explicit owner bootstrap uses an interactive npm login, never fake CI
-// variables or a long-lived publish token. Subsequent releases stay on OIDC.
+// Bootstrap is local and owner-approved: interactive login by default, or an
+// explicitly selected one-time owner token in an external temporary userconfig.
+// Subsequent releases stay on OIDC; no CI identity or token is fabricated.
 export async function assertBootstrapApproval() {
-  assert.notEqual(process.env.GITHUB_ACTIONS, 'true', 'Bootstrap requires the owner’s local interactive npm login.');
+  assert.notEqual(process.env.GITHUB_ACTIONS, 'true', 'Bootstrap requires local owner authorization.');
   assert.notEqual(process.env.SDK_NPM_BOOTSTRAPPED, 'true', 'An existing package must use the protected OIDC workflow.');
   assert.equal(process.env.NODE_AUTH_TOKEN || process.env.NPM_TOKEN, undefined, 'Registry tokens in the environment are forbidden.');
+  const authMode = process.env.SDK_BOOTSTRAP_AUTH_MODE ?? 'interactive';
+  assert.ok(authMode === 'interactive' || authMode === 'owner-token', 'Unknown bootstrap authentication mode.');
+  if (authMode === 'owner-token') {
+    const userConfig = process.env.NPM_CONFIG_USERCONFIG;
+    assert.ok(userConfig, 'Owner-token bootstrap requires an explicit temporary npm userconfig.');
+    const configPath = realpathSync(userConfig);
+    assert.ok(statSync(configPath).isFile(), 'The npm userconfig must be a regular file.');
+    const withinRepository = relative(realpathSync(resolve(packageDirectory, '../..')), configPath);
+    assert.ok(isAbsolute(withinRepository) || withinRepository.startsWith(`..${sep}`), 'Bootstrap credentials must stay outside the repository.');
+  }
   assert.ok(manifest.license && manifest.license !== 'UNLICENSED', 'The owner must explicitly license the source package.');
   assert.equal(process.env.SDK_RELEASE_APPROVED_LICENSE, manifest.license);
   assert.equal(process.env.SDK_RELEASE_APPROVED_VERSION, manifest.version);
