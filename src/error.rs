@@ -150,23 +150,33 @@ pub fn classify_wreq_error(err: &wreq::Error) -> (ErrorCode, String) {
             format!("Connection timeout: {}", message),
         )
     } else if err.is_connect() {
-        // Check for DNS or TLS errors in the message
-        let lower = message.to_lowercase();
-        if lower.contains("dns") || lower.contains("resolve") || lower.contains("getaddrinfo") {
-            (
-                ErrorCode::DnsError,
-                format!("DNS resolution failed: {}", message),
-            )
-        } else if lower.contains("ssl") || lower.contains("tls") || lower.contains("certificate") {
-            (ErrorCode::TlsError, format!("TLS error: {}", message))
-        } else if lower.contains("proxy") {
-            (
-                ErrorCode::ProxyError,
-                format!("Proxy connection failed: {}", message),
-            )
-        } else {
-            (ErrorCode::Unknown, format!("Connection error: {}", message))
+        // Connection wrappers omit transport details. Inspect their causes,
+        // not the request URL embedded in the outer error message.
+        let mut source = std::error::Error::source(err);
+        while let Some(cause) = source {
+            let mut detail = cause.to_string();
+            detail.make_ascii_lowercase();
+            let classification = if detail.contains("dns")
+                || detail.contains("resolve")
+                || detail.contains("getaddrinfo")
+            {
+                Some((ErrorCode::DnsError, "DNS resolution failed"))
+            } else if detail.contains("ssl")
+                || detail.contains("tls")
+                || detail.contains("certificate")
+            {
+                Some((ErrorCode::TlsError, "TLS error"))
+            } else if detail.contains("proxy") {
+                Some((ErrorCode::ProxyError, "Proxy connection failed"))
+            } else {
+                None
+            };
+            if let Some((code, label)) = classification {
+                return (code, format!("{label}: {message}"));
+            }
+            source = cause.source();
         }
+        (ErrorCode::Unknown, format!("Connection error: {}", message))
     } else if err.is_request() {
         (
             ErrorCode::InvalidRequest,
@@ -174,5 +184,44 @@ pub fn classify_wreq_error(err: &wreq::Error) -> (ErrorCode, String) {
         )
     } else {
         (ErrorCode::Unknown, message)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+    #[tokio::test]
+    async fn classifies_nested_tls_handshake_errors() {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let server = tokio::spawn(async move {
+            let (mut stream, _) = listener.accept().await.unwrap();
+            let mut hello = [0; 1024];
+            stream.read(&mut hello).await.unwrap();
+            // A plaintext response to a TLS ClientHello is a real TLS failure.
+            stream
+                .write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n")
+                .await
+                .unwrap();
+            // Drain the ClientHello instead of closing with unread data (TCP reset).
+            let _ = tokio::io::copy(&mut stream, &mut tokio::io::sink()).await;
+        });
+        let client = wreq::Client::builder()
+            .no_proxy()
+            .timeout(std::time::Duration::from_secs(5))
+            .build()
+            .unwrap();
+        let error = client
+            .get(format!("https://{address}/"))
+            .send()
+            .await
+            .unwrap_err();
+        tokio::time::timeout(std::time::Duration::from_secs(5), server)
+            .await
+            .unwrap()
+            .unwrap();
+        assert!(matches!(classify_wreq_error(&error).0, ErrorCode::TlsError));
     }
 }
