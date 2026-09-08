@@ -37,13 +37,22 @@ cd ja3proxy
 export JA3_PROXY_TOKEN="$(openssl rand -hex 32)"
 export JA3_PROXY_URL="http://127.0.0.1:8080"
 
-docker build -t ja3proxy-local .
+docker pull ghcr.io/sellaro-net/ja3proxy:latest
 docker run --rm --name ja3proxy-local \
   --read-only --cap-drop ALL --security-opt no-new-privileges \
   -e JA3_PROXY_TOKEN \
   -p 127.0.0.1:8080:8080 \
-  ja3proxy-local
+  ghcr.io/sellaro-net/ja3proxy:latest
 ```
+
+The public image supports Linux `amd64` and `arm64`; pulling it requires no
+GitHub account or `docker login`. `latest` follows successful builds of `main`.
+For production, pin the verified `sha256` digest from the container workflow
+summary rather than relying on a moving tag. Each publication checks an
+anonymous pull in a separate job without registry credentials.
+
+To build from source instead, run `docker build -t ja3proxy-local .` and replace
+the image reference in `docker run` with `ja3proxy-local`.
 
 Keep the container running. In another shell, set the same `JA3_PROXY_TOKEN`
 and `JA3_PROXY_URL`, then run the following commands from the repository directory.
@@ -176,33 +185,53 @@ targets for these tests on a production service.
 ### SDK publication
 
 The source manifest intentionally remains `private: true`. Checked development
-packs remain private too; only an explicitly approved isolated release copy is
-public. Package scripts and development dependencies never enter that copy.
+packs remain private too; only the isolated release copy is public. Package
+scripts and development dependencies never enter that copy. The SDK is published
+as [`@sellaro/ja3proxy`](https://www.npmjs.com/package/@sellaro/ja3proxy).
 
-The first real publication uses local owner authorization, not a placeholder
-package or forged CI environment. Interactive `npm login` is the default.
-Alternatively, the owner may explicitly authorize a one-time scoped token:
-set `SDK_BOOTSTRAP_AUTH_MODE=owner-token` and `NPM_CONFIG_USERCONFIG` to a
-temporary npm configuration file outside the repository. Never put credentials
-in source files or `NPM_TOKEN`/`NODE_AUTH_TOKEN`; delete that temporary
-configuration after use and revoke the bootstrap token.
-From the clean, reviewed commit
-already integrated into `main`, explicitly set `SDK_RELEASE_APPROVED_LICENSE`,
-`SDK_RELEASE_APPROVED_VERSION`, `SDK_RELEASE_APPROVED_SHA` and
-`SDK_BOOTSTRAP_NPM_USER` to the approved license, version, full commit and npm
-account. Run `pnpm --filter @sellaro/ja3proxy bootstrap:pack`, then validate the
-exact bytes with `pnpm --filter @sellaro/ja3proxy check:consumers --bootstrap --interop`.
-Only then publish that tarball with `npm publish --access public --ignore-scripts`.
-The bootstrap guard rejects existing packages, dirty/unintegrated source,
-unapproved accounts, CI execution and registry tokens injected through the environment.
+1. Merge SDK changes into protected `main`.
+2. Open **Actions → Prepare SDK release PR → Run workflow**, choose `main` and
+   `patch`, `minor`, or `major`. The workflow calculates the next version from
+   the source manifest and opens a PR containing the version and changelog.
+3. Review the normal CI checks and merge that PR. Merging is the release
+   approval: publication needs no further npm login or environment approval.
+4. The publishing workflow validates the exact release artifact, publishes it
+   directly to npm with short-lived GitHub OIDC authentication and provenance,
+   then creates `sdk-vX.Y.Z` and a GitHub Release with the same tarball/checksum.
 
-After bootstrap, configure npm trusted publishing for `sdk-publish.yml` and the
-protected `npm-staging` GitHub environment, allowing staging only. Set
-`SDK_NPM_BOOTSTRAPPED=true` and the exact approved license/version/SHA in that
-environment. The [release workflow](https://github.com/sellaro-net/ja3proxy/blob/main/.github/workflows/sdk-publish.yml)
-rebuilds and verifies the artifact before ephemeral OIDC staging; final npm
-approval remains with the owner and 2FA. SDK releases are independent of Rust
-image tags. See the [quality workflow](https://github.com/sellaro-net/ja3proxy/blob/main/.github/workflows/sdk-quality.yml)
+```sh
+gh workflow run sdk-prepare.yml --repo sellaro-net/ja3proxy --ref main -f bump=patch
+```
+
+Preparation does not force-push or bypass branch protection. Repeated preparation
+links an existing open release PR; competing release PRs are rejected. Releases
+are not stacked before the current version is public. No relevant SDK or shared
+contract changes means no empty release. Rust-only deployment changes do not
+automatically increment the SDK version.
+
+The publication workflow also supports **Run workflow** for recovery. Release
+source and artifact identity stay fixed across retries; published npm versions
+are never overwritten. If npm succeeded before GitHub release completion failed,
+recovery verifies the existing registry artifact and finishes the missing release
+pieces rather than publishing another version.
+
+One-time configuration:
+
+- Install the private release GitHub App only on `sellaro-net/ja3proxy`, with
+  **Contents: write** and **Pull requests: write**. Set repository variable
+  `SDK_RELEASE_APP_CLIENT_ID` and Actions secret `SDK_RELEASE_APP_PRIVATE_KEY`. Its
+  short-lived installation token lets bot PRs trigger ordinary CI without a
+  personal token or main-protection bypass.
+- Configure npm Trusted Publishing for organization `sellaro-net`, repository
+  `ja3proxy`, workflow **`sdk-publish.yml`**, environment **`npm-production`**,
+  allowing direct **`npm publish`**.
+- Restrict the `npm-production` environment to the exact branch **`main`**, with
+  no required reviewers or wait timer. Main's PR/CI protection is the approval
+  boundary. Do not store `NPM_TOKEN` or `NODE_AUTH_TOKEN` in GitHub.
+
+The SDK release pipeline is independent of Rust/GHCR version tags and does not
+update or deploy SDK consumers. See the
+[quality workflow](https://github.com/sellaro-net/ja3proxy/blob/main/.github/workflows/sdk-quality.yml)
 for the supported-platform matrix and real-service checks.
 
 ## Security

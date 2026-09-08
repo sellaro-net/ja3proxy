@@ -1,0 +1,64 @@
+name: Prepare SDK release PR
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: Stable SDK version bump (merging the PR approves publication)
+        required: true
+        default: patch
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sdk-release-preparation
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    if: github.repository == 'sellaro-net/ja3proxy' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
+      # Install this App only on this repository, with Contents and Pull requests
+      # write. It must not bypass main protection. The installation token expires
+      # after one hour and is revoked by the action's post step, including failures.
+      - name: Create repository-only release App token
+        id: app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ vars.SDK_RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.SDK_RELEASE_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
+          permission-contents: write
+          permission-pull-requests: write
+      # Unlike GITHUB_TOKEN, this App token makes PR creation trigger the normal
+      # pull_request checks. No npm credentials, OIDC grant, or approval bypass.
+      - name: Prepare or resume an immutable reviewed release PR
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          SDK_RELEASE_BUMP: ${{ inputs.bump }}
+        with:
+          github-token: ${{ steps.app.outputs.token }}
+          script: |
+            const { pathToFileURL } = require('node:url');
+            const { resolve } = require('node:path');
+            const script = pathToFileURL(resolve(process.env.GITHUB_WORKSPACE, 'packages/typescript/scripts/prepare-release-pr.mjs'));
+            const { prepareReleasePr } = await import(script.href);
+            await prepareReleasePr({ github, core, context, bump: process.env.SDK_RELEASE_BUMP });

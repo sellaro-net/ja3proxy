@@ -3,13 +3,10 @@ import { createHash } from 'node:crypto';
 import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { artifactPath, assertBootstrapApproval, assertPackagePolicy, assertReleaseApproval, npm, packageDirectory, require, runNode } from './package-tools.mjs';
+import { artifactPath, assertPackagePolicy, assertReleaseContext, npm, packageDirectory, require, runNode } from './package-tools.mjs';
 
-const bootstrap = process.argv.includes('--bootstrap');
-assert.ok(!bootstrap || !process.argv.includes('--release'), 'Choose bootstrap or OIDC release, not both.');
-const release = bootstrap || process.argv.includes('--release');
-if (bootstrap) await assertBootstrapApproval();
-else if (release) assertReleaseApproval();
+const release = process.argv.includes('--release');
+if (release) assertReleaseContext();
 const checksum = (await readFile(`${artifactPath}.sha256`, 'utf8')).split(' ')[0];
 assert.equal(createHash('sha256').update(await readFile(artifactPath)).digest('hex'), checksum, 'Packed bytes changed after validation.');
 const temporary = await mkdtemp(join(tmpdir(), 'ja3proxy-consumer-'));
