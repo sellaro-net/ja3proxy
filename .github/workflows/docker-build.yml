@@ -371,4 +371,4 @@ jobs:
           port="${binding##*:}"
           curl -fsS --retry 30 --retry-delay 1 --retry-connrefused --max-time 2 \
             "http://127.0.0.1:${port}/health" | jq -e '.status == "ok"'
-          printf '## Anonymous public pull verified\n\n`%s`\n' "$image" >> "$GITHUB_STEP_SUMMARY"
+          printf '## Anonymous public pull verified\n\n%s\n' "$image" >> "$GITHUB_STEP_SUMMARY"
