@@ -14,7 +14,7 @@ tokio = { version = "1.52.3", features = ["full"] }
 
 # HTTP client and browser emulation must move as a tested release-candidate pair.
 # Exact pins prevent Cargo from resolving API-incompatible pre-release versions.
-wreq = { version = "=6.0.0-rc.29", features = ["json", "socks", "gzip", "brotli", "zstd", "deflate", "stream"] }
+wreq = { version = "=6.0.0-rc.31", features = ["json", "socks", "gzip", "brotli", "zstd", "deflate", "stream"] }
 wreq-util = { version = "=3.0.0-rc.14", features = ["emulation-serde", "emulation-compression"] }
 futures-util = "0.3.32"
 
