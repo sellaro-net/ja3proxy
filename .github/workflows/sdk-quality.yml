@@ -65,6 +65,8 @@ jobs:
           package-manager-cache: false
       - name: Run SDK behavioral regressions
         run: pnpm sdk:test
+      - name: Check immutable release identity and recovery boundaries
+        run: node --test packages/typescript/test/release.test.mjs
       - name: Check SDK request semantics against Rust contract fixtures
         run: pnpm --filter @sellaro/ja3proxy test:contracts
       - name: Install actual tarball and exercise ESM/CJS consumers and workers

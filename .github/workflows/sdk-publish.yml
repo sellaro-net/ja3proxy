@@ -1,66 +1,117 @@
-name: SDK owner-approved npm staging
+name: SDK npm release
 
-# No push/tag/PR trigger, no GHCR coupling, and no automatic first publication.
-# Bootstrap requires the owner's real licensed package, never a placeholder.
-# Configure npm trusted publishing for this filename and npm-staging environment,
-# with only npm stage publish allowed. Final approval stays with the owner + 2FA.
+# Merging the version PR is the sole approval. The protected npm-production
+# environment allows only main, without a second reviewer or wait timer.
 on:
+  push:
+    branches: [main]
+    paths: ['packages/typescript/package.json']
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Existing source version to retry (blank: version at this main commit)'
+        required: false
+        type: string
 
 permissions:
   contents: read
 
 concurrency:
-  group: sdk-npm-staging
+  group: sdk-npm-release
   cancel-in-progress: false
 
 jobs:
-  quality:
+  resolve:
     if: github.repository == 'sellaro-net/ja3proxy' && github.ref == 'refs/heads/main'
-    uses: ./.github/workflows/sdk-quality.yml
-    permissions:
-      contents: read
-
-  prepare:
-    needs: quality
     runs-on: ubuntu-latest
-    timeout-minutes: 45
-    environment: npm-staging
+    timeout-minutes: 5
     permissions:
       contents: read
       actions: read
     outputs:
-      sha256: ${{ steps.artifact.outputs.sha256 }}
-    env:
-      SDK_NPM_BOOTSTRAPPED: ${{ vars.SDK_NPM_BOOTSTRAPPED }}
-      SDK_RELEASE_APPROVED_LICENSE: ${{ vars.SDK_RELEASE_APPROVED_LICENSE }}
-      SDK_RELEASE_APPROVED_VERSION: ${{ vars.SDK_RELEASE_APPROVED_VERSION }}
-      SDK_RELEASE_APPROVED_SHA: ${{ vars.SDK_RELEASE_APPROVED_SHA }}
+      release: ${{ steps.identity.outputs.release }}
+      source: ${{ steps.identity.outputs.source }}
+      version: ${{ steps.identity.outputs.version }}
+      identity: ${{ steps.identity.outputs.identity }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.sha }}
+          fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
-          node-version-file: .node-version
+          node-version: '24.18.0'
           package-manager-cache: false
-      - name: Enforce owner license and protected environment approvals
-        run: node packages/typescript/scripts/release-approval.mjs
+      - name: Resolve immutable main source and verify release restrictions
+        id: identity
+        run: node packages/typescript/scripts/resolve-release.mjs
         env:
           GITHUB_TOKEN: ${{ github.token }}
-      - name: Install exact release tooling without lifecycle scripts
+          SDK_RETRY_VERSION: ${{ inputs.version }}
+
+  prepare:
+    needs: resolve
+    if: needs.resolve.outputs.release == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    outputs:
+      sha256: ${{ steps.artifact.outputs.sha256 }}
+    env:
+      SDK_SOURCE_DIRECTORY: ${{ github.workspace }}/source
+      SDK_ARTIFACT_DIRECTORY: ${{ github.workspace }}/source/packages/typescript/artifacts
+      SDK_RELEASE_SHA: ${{ needs.resolve.outputs.source }}
+      SDK_RELEASE_VERSION: ${{ needs.resolve.outputs.version }}
+      SDK_RELEASE_IDENTITY: ${{ needs.resolve.outputs.identity }}
+    steps:
+      # Orchestration comes from this workflow commit; package code, fixtures,
+      # README, license and real Rust all come from the immutable source commit.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.resolve.outputs.source }}
+          path: source
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24.18.0'
+          package-manager-cache: false
+      - name: Install pinned release tools without lifecycle scripts
         run: npm install --global npm@12.0.2 pnpm@11.15.1 --ignore-scripts --no-audit --no-fund
-      - name: Install locked development dependencies without lifecycle scripts
+      - name: Install locked canonical source dependencies
+        working-directory: source
         run: pnpm install --frozen-lockfile --ignore-scripts
-      - name: Build reviewed source and prepare an approved isolated package copy
+      - name: Recover verified npm bytes if publication already succeeded
+        id: recovery
+        run: node packages/typescript/scripts/release-artifact.mjs recover
+      - name: Check source contracts, types and dependencies
+        working-directory: source
         run: |
+          pnpm --filter @sellaro/ja3proxy contracts:check
           pnpm sdk:typecheck
-          pnpm sdk:build
-          pnpm --filter @sellaro/ja3proxy release:pack
-      - name: Build the actual Rust service for the exact release artifact
+          pnpm audit --audit-level low
+      - name: Build SDK exactly once for a new publication
+        if: steps.recovery.outputs.recovered != 'true'
+        working-directory: source
+        run: pnpm sdk:build
+      - name: Pack and validate the isolated public SDK copy
+        if: steps.recovery.outputs.recovered != 'true'
+        run: node packages/typescript/scripts/package-check.mjs --release
+      - name: Validate recovered registry tarball without rebuilding it
+        if: steps.recovery.outputs.recovered == 'true'
+        run: node packages/typescript/scripts/package-check.mjs --release --existing
+      - name: Check actual Rust tests and DTO schema drift
+        working-directory: source
+        run: docker build --target rust-check .
+      - name: Build the actual Rust service for this release
+        working-directory: source
         run: docker build --tag ja3proxy-sdk-release-check .
-      - name: Validate the exact approved tarball against real Rust
+      - name: Validate the exact tarball against real Rust
         shell: bash
         run: |
           set -euo pipefail
@@ -76,38 +127,91 @@ jobs:
           export JA3_PROXY_URL=http://127.0.0.1:18992
           export JA3_SMOKE_ORIGIN_HOST=127.0.0.1
           curl --fail --silent --show-error --retry 30 --retry-delay 1 --retry-connrefused --max-time 2 "$JA3_PROXY_URL/health"
-          pnpm --filter @sellaro/ja3proxy check:consumers --release --interop
-      - name: Bind staging to the validated bytes
+          node packages/typescript/scripts/consumer-check.mjs --release --interop
+      - name: Bind release identity to the validated bytes
         id: artifact
-        shell: bash
-        run: |
-          set -euo pipefail
-          sha256=$(cut -d ' ' -f1 packages/typescript/artifacts/*.tgz.sha256)
-          printf 'sha256=%s\n' "$sha256" >> "$GITHUB_OUTPUT"
-      - name: Upload only the validated tarball and checksum
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        run: node packages/typescript/scripts/release-artifact.mjs record
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: approved-sdk-${{ github.sha }}
+          name: sdk-release-${{ github.run_id }}
           path: |
-            packages/typescript/artifacts/*.tgz
-            packages/typescript/artifacts/*.tgz.sha256
+            source/packages/typescript/artifacts/*.tgz
+            source/packages/typescript/artifacts/*.tgz.sha256
+            source/packages/typescript/artifacts/release.json
           if-no-files-found: error
-          retention-days: 7
+          retention-days: 30
+          overwrite: true
 
-  stage:
-    needs: prepare
+  validate:
+    needs: [resolve, prepare]
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        node: ['22.14.0', '24.18.0']
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      actions: read
+    env:
+      SDK_SOURCE_DIRECTORY: ${{ github.workspace }}/source
+      SDK_ARTIFACT_DIRECTORY: ${{ github.workspace }}/source/packages/typescript/artifacts
+      SDK_RELEASE_SHA: ${{ needs.resolve.outputs.source }}
+      SDK_RELEASE_VERSION: ${{ needs.resolve.outputs.version }}
+      SDK_ARTIFACT_SHA256: ${{ needs.prepare.outputs.sha256 }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.resolve.outputs.source }}
+          path: source
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24.18.0'
+          package-manager-cache: false
+      - name: Install pinned tools and locked source dependencies
+        working-directory: source
+        run: |
+          npm install --global npm@12.0.2 pnpm@11.15.1 --ignore-scripts --no-audit --no-fund
+          pnpm install --frozen-lockfile --ignore-scripts
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: sdk-release-${{ github.run_id }}
+          path: source/packages/typescript/artifacts
+      - name: Verify artifact binding and package declarations without rebuilding
+        run: |
+          node --input-type=module -e "import { readArtifact } from './packages/typescript/scripts/release-tools.mjs'; await readArtifact();"
+          node packages/typescript/scripts/package-check.mjs --release --existing
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: ${{ matrix.node }}
+          package-manager-cache: false
+      - name: Run source behavior and Rust fixture regressions on supported runtime
+        working-directory: source
+        run: |
+          pnpm sdk:test
+          pnpm --filter @sellaro/ja3proxy test:contracts
+      - name: Exercise actual release tarball exports, types and workers
+        run: node packages/typescript/scripts/consumer-check.mjs --release
+
+  publish:
+    needs: [resolve, prepare, validate]
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    environment: npm-staging
+    environment: npm-production
     permissions:
       contents: read
       actions: read
       id-token: write
     env:
-      SDK_NPM_BOOTSTRAPPED: ${{ vars.SDK_NPM_BOOTSTRAPPED }}
-      SDK_RELEASE_APPROVED_LICENSE: ${{ vars.SDK_RELEASE_APPROVED_LICENSE }}
-      SDK_RELEASE_APPROVED_VERSION: ${{ vars.SDK_RELEASE_APPROVED_VERSION }}
-      SDK_RELEASE_APPROVED_SHA: ${{ vars.SDK_RELEASE_APPROVED_SHA }}
+      SDK_ARTIFACT_DIRECTORY: ${{ github.workspace }}/release-artifact
+      SDK_RELEASE_SHA: ${{ needs.resolve.outputs.source }}
+      SDK_RELEASE_VERSION: ${{ needs.resolve.outputs.version }}
       SDK_ARTIFACT_SHA256: ${{ needs.prepare.outputs.sha256 }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -116,17 +220,48 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
-          node-version-file: .node-version
+          node-version: '24.18.0'
           package-manager-cache: false
-      - name: Recheck approvals without registry credentials
-        run: node packages/typescript/scripts/release-approval.mjs
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-      - name: Install the exact reviewed npm CLI
+      - name: Install only the pinned npm CLI (no SDK dependencies or build)
         run: npm install --global npm@12.0.2 --ignore-scripts --no-audit --no-fund
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: approved-sdk-${{ github.sha }}
-          path: packages/typescript/artifacts
-      - name: Stage validated bytes with ephemeral OIDC for owner review
-        run: node packages/typescript/scripts/stage-release.mjs
+          name: sdk-release-${{ github.run_id }}
+          path: release-artifact
+      - name: Verify and publish exact validated tarball with ephemeral OIDC
+        run: node packages/typescript/scripts/publish-release.mjs
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+  release:
+    needs: [resolve, prepare, publish]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      actions: read
+    env:
+      SDK_ARTIFACT_DIRECTORY: ${{ github.workspace }}/release-artifact
+      SDK_RELEASE_SHA: ${{ needs.resolve.outputs.source }}
+      SDK_RELEASE_VERSION: ${{ needs.resolve.outputs.version }}
+      SDK_ARTIFACT_SHA256: ${{ needs.prepare.outputs.sha256 }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24.18.0'
+          package-manager-cache: false
+      - name: Install pinned provenance verification tooling
+        run: npm install --global npm@12.0.2 --ignore-scripts --no-audit --no-fund
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: sdk-release-${{ github.run_id }}
+          path: release-artifact
+      - name: Verify npm and finish missing SDK tag, release and exact assets
+        run: node packages/typescript/scripts/complete-release.mjs
+        env:
+          GITHUB_TOKEN: ${{ github.token }}

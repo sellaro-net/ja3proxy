@@ -58,8 +58,7 @@
     "pack:checked": "node scripts/package-check.mjs",
     "check:consumers": "node scripts/consumer-check.mjs",
     "smoke:interop": "node scripts/interop-smoke.mjs",
-    "release:pack": "node scripts/package-check.mjs --release",
-    "bootstrap:pack": "node scripts/package-check.mjs --bootstrap"
+    "release:pack": "node scripts/package-check.mjs --release"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "0.18.5",
