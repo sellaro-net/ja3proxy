@@ -11,10 +11,11 @@ binary-safe representation of the upstream response.
 ## Operating contract
 
 - One independently deployable service; it is not part of the Sellaro monorepo.
-- Rust **1.97.0** is selected by [`rust-toolchain.toml`](rust-toolchain.toml).
+- Rust **1.98.1** is selected by [`rust-toolchain.toml`](rust-toolchain.toml).
   Dependencies are resolved by [`Cargo.lock`](Cargo.lock).
-- `wreq` and `wreq-util` are an exactly pinned, tested release-candidate pair.
-  Upgrade them together rather than resolving unrelated prereleases.
+- `wreq`, `wreq-util` and their TLS backend `btls` are upgraded together.
+  The backend is explicit because API error codes use its structured error
+  types, not changing error messages. The lockfile records concrete versions.
 - Published images use `ghcr.io/sellaro-net/ja3proxy` and include native
   `linux/amd64` and `linux/arm64` manifests, provenance and an SBOM.
 - The runtime is non-root. Its executable is root-owned, and PR CI verifies
@@ -59,8 +60,11 @@ cargo clippy --all-targets --locked -- -D warnings
 cargo test --locked
 ```
 
-Changing the Rust baseline requires updating both the toolchain file and the
-Docker builder tag/digest, then verifying the native and container builds.
+Changing the Rust baseline requires updating the toolchain file and
+`Cargo.toml`'s `rust-version`, then verifying the native and container builds.
+The Docker builder installs the selected toolchain explicitly: an official
+base image may temporarily lag a compiler patch release. Keep the builder and
+runtime on the same Debian release.
 
 ## Container usage
 

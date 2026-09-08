@@ -15,11 +15,14 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    allow:
+      - dependency-type: all
     groups:
       browser-emulation:
         patterns:
           - wreq
           - wreq-util
+          - btls
 
   - package-ecosystem: docker
     directory: /
