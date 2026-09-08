@@ -19,8 +19,11 @@ if (existing) {
   npm(['publish', join(releaseDirectory, identity.filename), '--provenance', '--access', 'public', '--tag', 'latest', '--ignore-scripts', '--registry', 'https://registry.npmjs.org/', '--fetch-retries=0', '--fetch-timeout=30000'], {
     env: { ...process.env, GITHUB_SHA: identity.source }, timeout: 300_000,
   });
-  const published = await registryManifest(identity.version);
+  // npm acknowledges the write before its manifest and attestation reads converge.
+  // Poll only their 404 visibility window; never repeat the publish or signature checks.
+  const visibility = { notFoundRetries: 30 };
+  const published = await registryManifest(identity.version, visibility);
   assert.ok(published, 'npm publication is not visible yet; rerun to verify and finish safely.');
-  await verifyRegistry(published, identity, identity.integrity);
+  await verifyRegistry(published, identity, identity.integrity, visibility);
   console.log(`Published and verified ${identity.tag} with GitHub OIDC provenance.`);
 }
