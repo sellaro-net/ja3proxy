@@ -270,6 +270,6 @@ jobs:
               and ($architectures | index("arm64") != null)
           '
           digest=$(printf '%s' "$manifest" | jq -er '.digest | select(test("^sha256:[a-f0-9]{64}$"))')
-          printf '## Published multi-architecture image\n\n`%s@%s`\n' \
+          printf '## Published multi-architecture image\n\n%s@%s\n' \
             "$IMAGE" "$digest" >> "$GITHUB_STEP_SUMMARY"
           printf '%s@%s\n' "$IMAGE" "$digest"
