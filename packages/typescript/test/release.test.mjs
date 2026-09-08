@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
-import { assertProvenance, digests, git, initialPublication, resolveIdentity, verifyRegistry } from '../scripts/release-tools.mjs';
+import { assertProvenance, digests, git, initialPublication, request, resolveIdentity, verifyRegistry } from '../scripts/release-tools.mjs';
 
 async function repositoryFixture() {
   const directory = await mkdtemp(join(tmpdir(), 'sdk-release-history-'));
@@ -134,5 +135,30 @@ test('publication boundary rejects tampered tarball even when its local checksum
     assert.match(bad.stderr, /exact validated tarball/);
   } finally {
     await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('release requests expose explicitly allowed redirects without following them or forwarding credentials', async () => {
+  let destinationRequests = 0;
+  const server = createServer((incoming, response) => {
+    if (incoming.url === '/asset') {
+      response.writeHead(302, { location: '/destination' });
+    } else {
+      destinationRequests += 1;
+    }
+    response.end();
+  });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  try {
+    const url = `http://127.0.0.1:${server.address().port}/asset`;
+    const headers = { authorization: 'Bearer regression-only' };
+    const response = await request(url, { headers, statuses: [200, 302] });
+    assert.equal(response.status, 302);
+    assert.equal(response.headers.get('location'), '/destination');
+    await response.body?.cancel();
+    await assert.rejects(request(url, { headers }), /unexpected HTTP 302/);
+    assert.equal(destinationRequests, 0);
+  } finally {
+    await new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
   }
 });

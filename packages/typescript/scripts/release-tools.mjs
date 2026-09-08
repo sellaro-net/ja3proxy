@@ -73,7 +73,7 @@ export function resolveIdentity(runGit, eventSha, requestedVersion) {
 export async function request(url, { method = 'GET', body, headers = {}, statuses = [200], github = false } = {}) {
   if (github) assert.ok(process.env.GITHUB_TOKEN, 'An ephemeral GitHub token is required.');
   const response = await fetch(url, {
-    method, body, redirect: 'error', signal: AbortSignal.timeout(30_000),
+    method, body, redirect: 'manual', signal: AbortSignal.timeout(30_000),
     headers: {
       accept: 'application/json',
       ...(github ? { authorization: `Bearer ${process.env.GITHUB_TOKEN}`, 'x-github-api-version': '2022-11-28' } : {}),
