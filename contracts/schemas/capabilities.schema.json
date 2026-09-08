@@ -1,0 +1,289 @@
+{
+  "$id": "https://ja3proxy.invalid/contracts/capabilities.schema.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "CapabilityLimits": {
+      "properties": {
+        "contextIdleTtlMs": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "contextMaxAgeMs": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "contextMaxIdleTtlMs": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "envelopeTimeoutMs": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "maxAllowedOrigins": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "maxConcurrent": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "maxConcurrentPerPartition": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "maxContexts": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "maxContextsPerPartition": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "maxControlBytes": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "maxCookieBytes": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "maxCookieSize": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "maxCookies": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "maxEnvelopes": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "maxHeaderBytes": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "maxHeaders": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "maxQueued": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "maxQueuedPerPartition": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "maxRequestBytes": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "maxResponseBytes": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "maxTimeoutMs": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "registryCapacity": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "registryTtlMs": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "maxRequestBytes",
+        "maxResponseBytes",
+        "maxTimeoutMs",
+        "maxConcurrent",
+        "maxConcurrentPerPartition",
+        "maxQueued",
+        "maxQueuedPerPartition",
+        "maxEnvelopes",
+        "envelopeTimeoutMs",
+        "maxControlBytes",
+        "maxHeaderBytes",
+        "maxHeaders",
+        "maxContexts",
+        "maxContextsPerPartition",
+        "contextIdleTtlMs",
+        "contextMaxIdleTtlMs",
+        "contextMaxAgeMs",
+        "maxCookies",
+        "maxCookieBytes",
+        "maxCookieSize",
+        "maxAllowedOrigins",
+        "registryCapacity",
+        "registryTtlMs"
+      ],
+      "type": "object"
+    },
+    "CapabilityModes": {
+      "properties": {
+        "cancel": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "cookies": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "egress": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "stream": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "egress",
+        "cookies",
+        "stream",
+        "cancel"
+      ],
+      "type": "object"
+    },
+    "FramingCapabilities": {
+      "properties": {
+        "contentType": {
+          "type": "string"
+        },
+        "maxDataBytes": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "maxMetadataBytes": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "maxUploadFrames": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "contentType",
+        "maxMetadataBytes",
+        "maxDataBytes",
+        "maxUploadFrames"
+      ],
+      "type": "object"
+    },
+    "HeaderDescriptor": {
+      "properties": {
+        "headers": {
+          "items": {
+            "items": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "maxItems": 2,
+            "minItems": 2,
+            "type": "array"
+          },
+          "type": "array"
+        },
+        "tlsProfile": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "tlsProfile",
+        "headers"
+      ],
+      "type": "object"
+    },
+    "ServiceName": {
+      "enum": [
+        "ja3proxy"
+      ],
+      "type": "string"
+    }
+  },
+  "properties": {
+    "build": {
+      "type": "string"
+    },
+    "framing": {
+      "$ref": "#/definitions/FramingCapabilities"
+    },
+    "headerDescriptors": {
+      "items": {
+        "$ref": "#/definitions/HeaderDescriptor"
+      },
+      "type": "array"
+    },
+    "limits": {
+      "$ref": "#/definitions/CapabilityLimits"
+    },
+    "modes": {
+      "$ref": "#/definitions/CapabilityModes"
+    },
+    "profiles": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "service": {
+      "$ref": "#/definitions/ServiceName"
+    }
+  },
+  "required": [
+    "service",
+    "build",
+    "profiles",
+    "headerDescriptors",
+    "framing",
+    "limits",
+    "modes"
+  ],
+  "title": "Capabilities",
+  "type": "object"
+}

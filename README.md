@@ -9,6 +9,7 @@ responses without running a browser.
 - [Usage guide](docs/usage.md) — requests, uploads, proxies, cookies and cancellation.
 - [API reference](docs/api.md) — endpoints, request fields, binary framing and errors.
 - [Configuration](docs/configuration.md) — authentication, limits and deployment.
+- [TypeScript SDK](#typescript-sdk) — Node.js async, streaming, fetch and synchronous clients.
 - [Example client](examples/request.py) — a streaming client using only the Python standard library.
 
 ## Features
@@ -70,7 +71,7 @@ The client streams the response and only replaces the output file after a valid
 successful terminal frame. Request IDs and the final status summary go to stderr.
 
 `/request` uses binary framing, not a JSON request/response envelope. Use the
-[example client](examples/request.py) or implement the [wire contract](docs/api.md#wire-format).
+[TypeScript SDK](#typescript-sdk), [example client](examples/request.py) or implement the [wire contract](docs/api.md#wire-format).
 
 ## Usage
 
@@ -81,6 +82,122 @@ successful terminal frame. Request IDs and the final status summary go to stderr
 - [Change a session's identity](docs/usage.md#identity-changes)
 - [Cancel a request or inspect its status](docs/usage.md#cancellation-and-status)
 - [Troubleshoot errors](docs/usage.md#troubleshooting)
+
+## TypeScript SDK
+
+`packages/typescript` contains the standalone `@sellaro/ja3proxy` package for
+Node.js 22.14 or newer. It has no npm runtime dependencies or framework coupling.
+The SDK is [MIT licensed](https://github.com/sellaro-net/ja3proxy/blob/main/packages/typescript/LICENSE);
+this grant covers the SDK, not the rest of the Rust repository.
+ESM and CommonJS share the root implementation, including error identity and
+response-completion tracking when both module formats are used in one process.
+
+For a published release, install `@sellaro/ja3proxy` with pnpm. For development,
+use Node.js 24.18.0 and pnpm 11.15.1 from the repository root:
+
+```sh
+pnpm install --frozen-lockfile --ignore-scripts
+pnpm sdk:typecheck
+pnpm sdk:build
+pnpm sdk:test
+pnpm sdk:pack
+pnpm sdk:consumers
+```
+
+`sdk:pack` produces `packages/typescript/artifacts/sellaro-ja3proxy-1.0.0.tgz`
+plus its SHA-256 checksum. Install that archive in a consuming application with
+`pnpm add` and its actual filesystem path.
+
+The application supplies the service address and credential explicitly. This
+example uses the variables from the service quick start; the SDK never reads them:
+
+```js
+import { Ja3ProxyClient } from '@sellaro/ja3proxy';
+
+const baseUrl = process.env.JA3_PROXY_URL;
+const token = process.env.JA3_PROXY_TOKEN;
+if (!baseUrl || !token) throw new Error('JA3_PROXY_URL und JA3_PROXY_TOKEN sind erforderlich');
+const client = new Ja3ProxyClient({ baseUrl, token });
+try {
+  const capabilities = await client.capabilities();
+  const response = await client.request({
+    partition: 'example',
+    connection: {
+      egress: { mode: 'direct' },
+      identity: { tlsProfile: capabilities.profiles[0], emulateHeaders: false },
+    },
+    method: 'GET',
+    url: 'https://example.com/',
+    timeoutMs: 10_000,
+    maxResponseBytes: 1024 * 1024,
+  });
+  console.log(response.status, response.text());
+} finally {
+  await client.close();
+}
+```
+
+- `request()` buffers within explicit limits and succeeds only after a valid
+  terminal success frame. `tryRequest()` returns `Result<BufferedResponse>`.
+  HTTP error statuses remain HTTP responses, not transport failures.
+- `stream()` exposes headers, a byte stream and `completion: Promise<Result<Ja3Diagnostics>>`.
+  Headers or body bytes alone do not establish success. Consume the body, check
+  completion and close streams abandoned early.
+- `createFetch()` returns a closeable fetch adapter. It is stateless unless
+  `context: 'session'` is explicit. `getResponseCompletion(response)` returns the
+  terminal result for SDK responses and `undefined` for unrelated native responses.
+- `createSession()` owns its context. Managed cookie sessions require allowed
+  origins and expose cookie snapshots, revision-checked imports and rebinding.
+  `committed_cleanup_pending` means the new identity is already bound: do not
+  repeat the rebind just because old-context cleanup failed.
+- Closing rejects new work immediately; `close({ drain: true, timeoutMs })` bounds
+  draining. Failed remote cleanup retains ownership for a subsequent explicit
+  `close()` attempt. It never replays an upstream request. A hard worker failure
+  cannot guarantee immediate remote cleanup; service expiry remains the backstop.
+- `Ja3ProxySyncClient` from `@sellaro/ja3proxy/sync` uses a real Worker/Atomics
+  bridge with bounded IPC, timeouts, buffering and ordered `requestMany()` results.
+  It blocks the calling thread: the service and upstream must not depend on that
+  same event loop. Use the async API in servers and close sync clients explicitly.
+
+Queueing, lazy context creation and response processing share one total deadline.
+The SDK does not retry requests, follow redirects, rotate proxies or fall back to
+direct connections. Application policy owns those decisions. Observers receive
+bounded byte copies; the SDK does not install tracing or journals.
+
+Rust DTOs are the wire-contract source. `pnpm contracts:generate` exports schemas
+and regenerates TypeScript types and standalone validators; `pnpm contracts:check`
+rejects drift. `pnpm --filter @sellaro/ja3proxy test:contracts` checks shared fixtures.
+`pnpm sdk:consumers --interop` exercises installed ESM/CJS exports and workers
+against a running service. Use an isolated service with `ALLOW_PRIVATE_IPS=true`
+for the local test origins; set `JA3_SMOKE_ORIGIN_HOST` to an address reachable
+from the service (`host.docker.internal` on Docker Desktop). Never enable private
+targets for these tests on a production service.
+
+### SDK publication
+
+The source manifest intentionally remains `private: true`. Checked development
+packs remain private too; only an explicitly approved isolated release copy is
+public. Package scripts and development dependencies never enter that copy.
+
+The first real publication uses the owner's interactive `npm login`, not a
+placeholder package or forged CI environment. From the clean, reviewed commit
+already integrated into `main`, explicitly set `SDK_RELEASE_APPROVED_LICENSE`,
+`SDK_RELEASE_APPROVED_VERSION`, `SDK_RELEASE_APPROVED_SHA` and
+`SDK_BOOTSTRAP_NPM_USER` to the approved license, version, full commit and npm
+account. Run `pnpm --filter @sellaro/ja3proxy bootstrap:pack`, then validate the
+exact bytes with `pnpm --filter @sellaro/ja3proxy check:consumers --bootstrap --interop`.
+Only then publish that tarball with `npm publish --access public --ignore-scripts`.
+The bootstrap guard rejects existing packages, dirty/unintegrated source,
+unapproved accounts, CI execution and registry tokens injected through the environment.
+
+After bootstrap, configure npm trusted publishing for `sdk-publish.yml` and the
+protected `npm-staging` GitHub environment, allowing staging only. Set
+`SDK_NPM_BOOTSTRAPPED=true` and the exact approved license/version/SHA in that
+environment. The [release workflow](https://github.com/sellaro-net/ja3proxy/blob/main/.github/workflows/sdk-publish.yml)
+rebuilds and verifies the artifact before ephemeral OIDC staging; final npm
+approval remains with the owner and 2FA. SDK releases are independent of Rust
+image tags. See the [quality workflow](https://github.com/sellaro-net/ja3proxy/blob/main/.github/workflows/sdk-quality.yml)
+for the supported-platform matrix and real-service checks.
 
 ## Security
 
@@ -109,14 +226,14 @@ Run the checks before submitting changes:
 
 ```sh
 cargo fmt --check
-cargo clippy --all-targets --locked -- -D warnings
-cargo test --locked
+cargo clippy --all-targets --all-features --locked -- -D warnings
+cargo test --all-features --locked
 ```
 
 The pinned `wreq` dependency includes a connector patch for address and
 cancellation ownership. Read its [provenance and refresh requirements](vendor/wreq/transport-provenance.json)
-before updating it. Third-party code keeps its own license terms; this repository
-has no project-level license grant.
+before updating it. Third-party code keeps its own license terms. The TypeScript
+SDK has its own MIT grant; there is no repository-wide license grant for the Rust code.
 
 ## Project links
 

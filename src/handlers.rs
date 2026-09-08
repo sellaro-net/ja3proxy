@@ -7,8 +7,9 @@ use crate::{
     emulation::{available_profiles, header_descriptors, parse_tls_profile},
     error::{ErrorCode, TransportError, from_wreq},
     models::{
-        CookieMode, CreateContext, Delivery, Diagnostics, PartitionCommand, Phase, RequestMetadata,
-        ResponseMetadata, valid_opaque,
+        Capabilities, CapabilityLimits, CapabilityModes, CookieMode, CreateContext, Delivery,
+        Diagnostics, FramingCapabilities, PartitionCommand, Phase, RequestMetadata,
+        ResponseMetadata, ServiceName, valid_opaque,
     },
     network::{NetworkClient, NetworkPolicy},
     protocol::{self, FrameReader},
@@ -71,32 +72,67 @@ pub async fn capabilities_handler(State(state): State<AppState>) -> Response {
 }
 
 fn capability_bytes(config: &Config) -> Bytes {
-    let limits = ContextLimits::default();
-    let capabilities = json!({
-        "service":"ja3proxy","build":env!("CARGO_PKG_VERSION"),
-        "profiles":available_profiles(),"headerDescriptors":header_descriptors(),
-        "framing":{"contentType":protocol::CONTENT_TYPE,"maxMetadataBytes":protocol::MAX_METADATA_BYTES,
-            "maxDataBytes":protocol::MAX_DATA_BYTES,"maxUploadFrames":protocol::MAX_UPLOAD_FRAMES},
-        "limits":{"maxRequestBytes":config.max_request_body_size,
-            "maxResponseBytes":config.max_response_body_size,"maxTimeoutMs":config.max_timeout_ms,
-            "maxConcurrent":config.max_concurrent,"maxConcurrentPerPartition":config.max_concurrent_per_partition,
-            "maxQueued":config.max_queued,"maxQueuedPerPartition":config.max_queued_per_partition,
-            "maxEnvelopes":config.max_envelopes,"envelopeTimeoutMs":config.envelope_timeout_ms,
-            "maxControlBytes":config.max_control_body_size,"maxHeaderBytes":32_768,"maxHeaders":256,
-            "maxContexts":limits.max_contexts,"maxContextsPerPartition":limits.max_contexts_per_partition,
-            "contextIdleTtlMs":limits.default_idle_ttl_ms,"contextMaxIdleTtlMs":limits.max_idle_ttl_ms,
-            "contextMaxAgeMs":limits.max_age_ms,"maxCookies":limits.max_cookies,"maxCookieBytes":limits.max_cookie_bytes,
-            "maxCookieSize":limits.max_cookie_size,"maxAllowedOrigins":limits.max_allowed_origins,
-            "registryCapacity":config.registry_capacity,"registryTtlMs":config.registry_ttl_ms},
-        "modes":{"egress":["direct","http","https","socks4","socks4a","socks5","socks5h"],
-            "cookies":["external","managed"],"stream":["upload","download"],"cancel":["request","stream-drop"]}
-    });
     Bytes::from(
-        serde_json::to_vec(&capabilities).expect("Statische Fähigkeiten sind serialisierbar"),
+        serde_json::to_vec(&capabilities(config))
+            .expect("Statische Fähigkeiten sind serialisierbar"),
     )
 }
 
-fn validate_metadata(metadata: &RequestMetadata, config: &Config) -> Result<(), TransportError> {
+pub(crate) fn capabilities(config: &Config) -> Capabilities {
+    let limits = ContextLimits::default();
+    Capabilities {
+        service: ServiceName::Ja3Proxy,
+        build: env!("CARGO_PKG_VERSION").to_owned(),
+        profiles: available_profiles(),
+        header_descriptors: header_descriptors(),
+        framing: FramingCapabilities {
+            content_type: protocol::CONTENT_TYPE.to_owned(),
+            max_metadata_bytes: protocol::MAX_METADATA_BYTES,
+            max_data_bytes: protocol::MAX_DATA_BYTES,
+            max_upload_frames: protocol::MAX_UPLOAD_FRAMES,
+        },
+        limits: CapabilityLimits {
+            max_request_bytes: config.max_request_body_size,
+            max_response_bytes: config.max_response_body_size,
+            max_timeout_ms: config.max_timeout_ms,
+            max_concurrent: config.max_concurrent,
+            max_concurrent_per_partition: config.max_concurrent_per_partition,
+            max_queued: config.max_queued,
+            max_queued_per_partition: config.max_queued_per_partition,
+            max_envelopes: config.max_envelopes,
+            envelope_timeout_ms: config.envelope_timeout_ms,
+            max_control_bytes: config.max_control_body_size,
+            max_header_bytes: 32_768,
+            max_headers: 256,
+            max_contexts: limits.max_contexts,
+            max_contexts_per_partition: limits.max_contexts_per_partition,
+            context_idle_ttl_ms: limits.default_idle_ttl_ms,
+            context_max_idle_ttl_ms: limits.max_idle_ttl_ms,
+            context_max_age_ms: limits.max_age_ms,
+            max_cookies: limits.max_cookies,
+            max_cookie_bytes: limits.max_cookie_bytes,
+            max_cookie_size: limits.max_cookie_size,
+            max_allowed_origins: limits.max_allowed_origins,
+            registry_capacity: config.registry_capacity,
+            registry_ttl_ms: config.registry_ttl_ms,
+        },
+        modes: CapabilityModes {
+            egress: [
+                "direct", "http", "https", "socks4", "socks4a", "socks5", "socks5h",
+            ]
+            .map(str::to_owned)
+            .into(),
+            cookies: ["external", "managed"].map(str::to_owned).into(),
+            stream: ["upload", "download"].map(str::to_owned).into(),
+            cancel: ["request", "stream-drop"].map(str::to_owned).into(),
+        },
+    }
+}
+
+pub(crate) fn validate_metadata(
+    metadata: &RequestMetadata,
+    config: &Config,
+) -> Result<(), TransportError> {
     if !valid_opaque(&metadata.request_id)
         || !valid_opaque(&metadata.partition)
         || metadata
@@ -830,7 +866,10 @@ mod tests {
         let status = tokio::time::timeout(Duration::from_secs(5), async {
             loop {
                 let status = record.status();
-                if matches!(status.state, "failed" | "complete") {
+                if matches!(
+                    status.state,
+                    crate::registry::RequestState::Failed | crate::registry::RequestState::Complete
+                ) {
                     break status;
                 }
                 tokio::task::yield_now().await;

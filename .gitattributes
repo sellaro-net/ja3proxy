@@ -1,0 +1,3 @@
+# Generated contract drift checks compare exact, platform-independent bytes.
+contracts/** text eol=lf
+packages/typescript/src/generated/** text eol=lf

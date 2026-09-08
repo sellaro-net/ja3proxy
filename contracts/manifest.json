@@ -1,0 +1,80 @@
+{
+  "contracts": [
+    {
+      "direction": "deserialize",
+      "name": "requestMetadata",
+      "schema": "schemas/requestMetadata.schema.json",
+      "typeName": "RequestMetadata"
+    },
+    {
+      "direction": "serialize",
+      "name": "responseMetadata",
+      "schema": "schemas/responseMetadata.schema.json",
+      "typeName": "ResponseMetadata"
+    },
+    {
+      "direction": "serialize",
+      "name": "diagnostics",
+      "schema": "schemas/diagnostics.schema.json",
+      "typeName": "Diagnostics"
+    },
+    {
+      "direction": "serialize",
+      "name": "transportError",
+      "schema": "schemas/transportError.schema.json",
+      "typeName": "TransportError"
+    },
+    {
+      "direction": "serialize",
+      "name": "contextInfo",
+      "schema": "schemas/contextInfo.schema.json",
+      "typeName": "ContextInfo"
+    },
+    {
+      "direction": "deserialize",
+      "name": "cookieRecord",
+      "schema": "schemas/cookieRecord.schema.json",
+      "typeName": "CookieRecord"
+    },
+    {
+      "direction": "deserialize",
+      "name": "cookieSnapshot",
+      "schema": "schemas/cookieSnapshot.schema.json",
+      "typeName": "CookieSnapshot"
+    },
+    {
+      "direction": "serialize",
+      "name": "capabilities",
+      "schema": "schemas/capabilities.schema.json",
+      "typeName": "Capabilities"
+    },
+    {
+      "direction": "deserialize",
+      "name": "createContext",
+      "schema": "schemas/createContext.schema.json",
+      "typeName": "CreateContext"
+    },
+    {
+      "direction": "deserialize",
+      "name": "cookieOperation",
+      "schema": "schemas/cookieOperation.schema.json",
+      "typeName": "CookieOperation"
+    },
+    {
+      "direction": "serialize",
+      "name": "cookieReply",
+      "schema": "schemas/cookieReply.schema.json",
+      "typeName": "CookieReply"
+    },
+    {
+      "direction": "serialize",
+      "name": "requestStatus",
+      "schema": "schemas/requestStatus.schema.json",
+      "typeName": "RequestStatus"
+    }
+  ],
+  "formatVersion": 1,
+  "javascriptSafeIntegers": true,
+  "schemaDialect": "http://json-schema.org/draft-07/schema#",
+  "source": "Rust service DTOs via schemars"
+}

@@ -1,0 +1,167 @@
+{
+  "$id": "https://ja3proxy.invalid/contracts/responseMetadata.schema.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "Delivery": {
+      "enum": [
+        "not_started",
+        "possibly_sent",
+        "response_started"
+      ],
+      "type": "string"
+    },
+    "Diagnostics": {
+      "properties": {
+        "attempt": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "bodyMs": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "clientReused": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "contextId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "cookieRevision": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "delivery": {
+          "$ref": "#/definitions/Delivery"
+        },
+        "headersMs": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "phase": {
+          "$ref": "#/definitions/Phase"
+        },
+        "queueMs": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "requestBytes": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "requestId": {
+          "type": "string"
+        },
+        "responseBytes": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "tlsProfile": {
+          "type": "string"
+        },
+        "totalMs": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "traceId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "requestId",
+        "attempt",
+        "phase",
+        "delivery",
+        "queueMs",
+        "headersMs",
+        "bodyMs",
+        "totalMs",
+        "requestBytes",
+        "responseBytes",
+        "tlsProfile"
+      ],
+      "type": "object"
+    },
+    "Phase": {
+      "enum": [
+        "queued",
+        "preparing",
+        "upstream",
+        "body",
+        "complete"
+      ],
+      "type": "string"
+    }
+  },
+  "properties": {
+    "cookieRevision": {
+      "format": "uint64",
+      "minimum": 0,
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "diagnostics": {
+      "$ref": "#/definitions/Diagnostics"
+    },
+    "headers": {
+      "items": {
+        "items": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "string"
+          }
+        ],
+        "maxItems": 2,
+        "minItems": 2,
+        "type": "array"
+      },
+      "type": "array"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "status": {
+      "format": "uint16",
+      "maximum": 65535,
+      "minimum": 0,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "requestId",
+    "status",
+    "headers",
+    "diagnostics"
+  ],
+  "title": "ResponseMetadata",
+  "type": "object"
+}

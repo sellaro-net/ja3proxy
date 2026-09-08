@@ -1,0 +1,75 @@
+{
+  "name": "@sellaro/ja3proxy",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Authenticated, framed JA3Proxy transport SDK for Node.js.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=22.14.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sellaro-net/ja3proxy.git",
+    "directory": "packages/typescript"
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./sync": {
+      "import": {
+        "types": "./dist/sync/index.d.ts",
+        "default": "./dist/sync/index.js"
+      },
+      "require": {
+        "types": "./dist/sync/index.d.cts",
+        "default": "./dist/sync/index.cjs"
+      }
+    }
+  },
+  "files": [
+    "dist/**",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  },
+  "scripts": {
+    "contracts:generate": "node scripts/generate-contracts.mjs",
+    "contracts:check": "node scripts/generate-contracts.mjs --check && node scripts/generate-contracts.mjs --check-fixtures",
+    "typecheck": "tsc --noEmit",
+    "build": "node scripts/build.mjs",
+    "test": "node --import tsx --test test/*.test.ts",
+    "test:contracts": "node --import tsx --test ../../contracts/fixtures.test.mjs",
+    "pack:checked": "node scripts/package-check.mjs",
+    "check:consumers": "node scripts/consumer-check.mjs",
+    "smoke:interop": "node scripts/interop-smoke.mjs",
+    "release:pack": "node scripts/package-check.mjs --release",
+    "bootstrap:pack": "node scripts/package-check.mjs --bootstrap"
+  },
+  "devDependencies": {
+    "@arethetypeswrong/cli": "0.18.5",
+    "@types/node": "22.13.4",
+    "ajv": "8.20.0",
+    "esbuild": "0.27.0",
+    "json-schema-to-typescript": "15.0.4",
+    "publint": "0.3.24",
+    "tsdown": "0.23.0",
+    "tsx": "4.20.6",
+    "typescript": "5.9.3"
+  }
+}

@@ -1,0 +1,6 @@
+packages:
+  - packages/typescript
+
+# Tooling can use platform optional binaries, but never dependency lifecycle scripts.
+ignoreScripts: true
+strictPeerDependencies: true

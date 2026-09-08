@@ -3,6 +3,8 @@ mod admission;
 mod auth;
 mod config;
 mod contexts;
+#[cfg(feature = "schema-export")]
+mod contracts;
 mod emulation;
 mod error;
 mod handlers;
@@ -49,6 +51,10 @@ pub fn router(state: AppState) -> Router {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    #[cfg(feature = "schema-export")]
+    if contracts::export_from_args()? {
+        return Ok(());
+    }
     let config = Config::from_env()?;
     let level = config
         .log_level

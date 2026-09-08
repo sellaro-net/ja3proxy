@@ -1,0 +1,122 @@
+{
+  "$id": "https://ja3proxy.invalid/contracts/cookieReply.schema.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "CookieRecord": {
+      "additionalProperties": false,
+      "properties": {
+        "domain": {
+          "type": "string"
+        },
+        "expiresAtMs": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "hostOnly": {
+          "type": "boolean"
+        },
+        "httpOnly": {
+          "type": "boolean"
+        },
+        "name": {
+          "type": "string"
+        },
+        "partitioned": {
+          "type": "boolean"
+        },
+        "path": {
+          "type": "string"
+        },
+        "sameSite": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CookieSameSite"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "secure": {
+          "type": "boolean"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "value",
+        "domain",
+        "path",
+        "secure",
+        "httpOnly",
+        "hostOnly",
+        "partitioned"
+      ],
+      "type": "object"
+    },
+    "CookieSameSite": {
+      "enum": [
+        "Strict",
+        "Lax",
+        "None"
+      ],
+      "type": "string"
+    },
+    "CookieSnapshot": {
+      "additionalProperties": false,
+      "properties": {
+        "cookies": {
+          "items": {
+            "$ref": "#/definitions/CookieRecord"
+          },
+          "type": "array"
+        },
+        "partitionKey": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "partitionKey",
+        "cookies"
+      ],
+      "type": "object"
+    }
+  },
+  "properties": {
+    "cookies": {
+      "items": {
+        "$ref": "#/definitions/CookieRecord"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "revision": {
+      "format": "uint64",
+      "minimum": 0,
+      "type": "integer"
+    },
+    "snapshot": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/CookieSnapshot"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "revision"
+  ],
+  "title": "CookieReply",
+  "type": "object"
+}

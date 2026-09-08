@@ -24,6 +24,29 @@ RUN --mount=type=cache,id=ja3proxy-registry,target=/usr/local/cargo/registry,sha
     cargo build --release --locked \
     && cp /app/target/release/ja3proxy /ja3proxy
 
+# Generate the authoritative wire contract with the same native toolchain as
+# the service. Export with --target contracts --output type=local,dest=contracts.
+FROM builder AS contract-generator
+ARG TARGETARCH
+RUN --mount=type=cache,id=ja3proxy-registry,target=/usr/local/cargo/registry,sharing=locked \
+    --mount=type=cache,id=ja3proxy-target-trixie-${TARGETARCH},target=/app/target,sharing=locked \
+    cargo run --release --locked --features schema-export --bin ja3proxy -- --export-contracts /contracts
+
+FROM scratch AS contracts
+COPY --from=contract-generator /contracts /
+
+# Maintainers can run the native Rust gates without installing the TLS build
+# toolchain on the host. This stage is not part of the production image.
+FROM builder AS rust-check
+ARG TARGETARCH
+COPY contracts ./contracts
+RUN --mount=type=cache,id=ja3proxy-registry,target=/usr/local/cargo/registry,sharing=locked \
+    --mount=type=cache,id=ja3proxy-target-trixie-${TARGETARCH},target=/app/target,sharing=locked \
+    cargo fmt --check \
+    && cargo clippy --locked --all-targets --all-features -- -D warnings \
+    && cargo test --locked --all-features \
+    && cargo run --release --locked --features schema-export --bin ja3proxy -- --export-contracts contracts --check
+
 FROM debian:trixie-slim@sha256:d7e12182ce18b85b93007c1dedf31f2d29e01ccf3182cc4017c709b6259bc132
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \

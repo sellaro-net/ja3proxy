@@ -1,7 +1,7 @@
 //! Principal/partition-bound transport contexts. Managed cookies are ephemeral HTTP state,
 //! not a JavaScript cookie API or a browser SameSite implementation.
 
-mod cookies;
+pub(crate) mod cookies;
 #[cfg(test)]
 mod tests;
 

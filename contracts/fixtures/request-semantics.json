@@ -1,0 +1,221 @@
+{
+  "fixtures": [
+    {
+      "errorCode": null,
+      "name": "connection-bodyless",
+      "schemaValid": true,
+      "sdkBoundary": "encode",
+      "semanticValid": true,
+      "value": {
+        "attempt": 1,
+        "bodyLength": 0,
+        "connection": {
+          "egress": {
+            "mode": "direct"
+          },
+          "identity": {
+            "emulateHeaders": false,
+            "tlsProfile": "chrome_133"
+          }
+        },
+        "contextId": null,
+        "hasBody": false,
+        "headers": [],
+        "maxResponseBytes": 1024,
+        "method": "POST",
+        "partition": "semantic-partition",
+        "requestId": "semantic-request",
+        "timeoutMs": 5000,
+        "url": "https://example.com/"
+      }
+    },
+    {
+      "errorCode": null,
+      "name": "context-bodyless",
+      "schemaValid": true,
+      "sdkBoundary": "encode",
+      "semanticValid": true,
+      "value": {
+        "attempt": 1,
+        "bodyLength": 0,
+        "connection": null,
+        "contextId": "semantic-context",
+        "hasBody": false,
+        "headers": [],
+        "maxResponseBytes": 1024,
+        "method": "POST",
+        "partition": "semantic-partition",
+        "requestId": "semantic-request",
+        "timeoutMs": 5000,
+        "url": "https://example.com/"
+      }
+    },
+    {
+      "errorCode": "INVALID_REQUEST",
+      "name": "both-connection-and-context",
+      "schemaValid": true,
+      "sdkBoundary": "reject",
+      "semanticValid": false,
+      "value": {
+        "attempt": 1,
+        "bodyLength": 0,
+        "connection": {
+          "egress": {
+            "mode": "direct"
+          },
+          "identity": {
+            "emulateHeaders": false,
+            "tlsProfile": "chrome_133"
+          }
+        },
+        "contextId": "semantic-context",
+        "hasBody": false,
+        "headers": [],
+        "maxResponseBytes": 1024,
+        "method": "POST",
+        "partition": "semantic-partition",
+        "requestId": "semantic-request",
+        "timeoutMs": 5000,
+        "url": "https://example.com/"
+      }
+    },
+    {
+      "errorCode": "INVALID_REQUEST",
+      "name": "neither-connection-nor-context",
+      "schemaValid": true,
+      "sdkBoundary": "reject",
+      "semanticValid": false,
+      "value": {
+        "attempt": 1,
+        "bodyLength": 0,
+        "connection": null,
+        "contextId": null,
+        "hasBody": false,
+        "headers": [],
+        "maxResponseBytes": 1024,
+        "method": "POST",
+        "partition": "semantic-partition",
+        "requestId": "semantic-request",
+        "timeoutMs": 5000,
+        "url": "https://example.com/"
+      }
+    },
+    {
+      "errorCode": "INVALID_REQUEST",
+      "name": "zero-timeout",
+      "schemaValid": true,
+      "sdkBoundary": "reject",
+      "semanticValid": false,
+      "value": {
+        "attempt": 1,
+        "bodyLength": 0,
+        "connection": {
+          "egress": {
+            "mode": "direct"
+          },
+          "identity": {
+            "emulateHeaders": false,
+            "tlsProfile": "chrome_133"
+          }
+        },
+        "contextId": null,
+        "hasBody": false,
+        "headers": [],
+        "maxResponseBytes": 1024,
+        "method": "POST",
+        "partition": "semantic-partition",
+        "requestId": "semantic-request",
+        "timeoutMs": 0,
+        "url": "https://example.com/"
+      }
+    },
+    {
+      "errorCode": "INVALID_REQUEST",
+      "name": "zero-response-limit",
+      "schemaValid": true,
+      "sdkBoundary": "reject",
+      "semanticValid": false,
+      "value": {
+        "attempt": 1,
+        "bodyLength": 0,
+        "connection": {
+          "egress": {
+            "mode": "direct"
+          },
+          "identity": {
+            "emulateHeaders": false,
+            "tlsProfile": "chrome_133"
+          }
+        },
+        "contextId": null,
+        "hasBody": false,
+        "headers": [],
+        "maxResponseBytes": 0,
+        "method": "POST",
+        "partition": "semantic-partition",
+        "requestId": "semantic-request",
+        "timeoutMs": 5000,
+        "url": "https://example.com/"
+      }
+    },
+    {
+      "errorCode": "INVALID_REQUEST",
+      "name": "bodyless-nonzero-length",
+      "schemaValid": true,
+      "sdkBoundary": "derived-body",
+      "semanticValid": false,
+      "value": {
+        "attempt": 1,
+        "bodyLength": 4,
+        "connection": {
+          "egress": {
+            "mode": "direct"
+          },
+          "identity": {
+            "emulateHeaders": false,
+            "tlsProfile": "chrome_133"
+          }
+        },
+        "contextId": null,
+        "hasBody": false,
+        "headers": [],
+        "maxResponseBytes": 1024,
+        "method": "POST",
+        "partition": "semantic-partition",
+        "requestId": "semantic-request",
+        "timeoutMs": 5000,
+        "url": "https://example.com/"
+      }
+    },
+    {
+      "errorCode": null,
+      "name": "buffered-body",
+      "schemaValid": true,
+      "sdkBoundary": "encode",
+      "semanticValid": true,
+      "value": {
+        "attempt": 1,
+        "bodyLength": 4,
+        "connection": {
+          "egress": {
+            "mode": "direct"
+          },
+          "identity": {
+            "emulateHeaders": false,
+            "tlsProfile": "chrome_133"
+          }
+        },
+        "contextId": null,
+        "hasBody": true,
+        "headers": [],
+        "maxResponseBytes": 1024,
+        "method": "POST",
+        "partition": "semantic-partition",
+        "requestId": "semantic-request",
+        "timeoutMs": 5000,
+        "url": "https://example.com/"
+      }
+    }
+  ],
+  "formatVersion": 1
+}
