@@ -62,13 +62,13 @@
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "0.18.5",
-    "@types/node": "22.13.4",
+    "@types/node": "26.4.1",
     "ajv": "8.20.0",
-    "esbuild": "0.27.0",
-    "json-schema-to-typescript": "15.0.4",
+    "esbuild": "0.28.2",
+    "json-schema-to-typescript": "16.0.0",
     "publint": "0.3.24",
     "tsdown": "0.23.0",
-    "tsx": "4.20.6",
-    "typescript": "5.9.3"
+    "tsx": "4.23.13",
+    "typescript": "7.0.2"
   }
 }
