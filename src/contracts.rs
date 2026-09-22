@@ -120,7 +120,8 @@ fn diagnostics() -> Diagnostics {
     Diagnostics {
         request_id: "contract-request".into(),
         attempt: 1,
-        trace_id: None,
+        trace_id: "0123456789abcdef0123456789abcdef".into(),
+        span_id: "fedcba9876543210".into(),
         phase: Phase::Complete,
         delivery: Delivery::ResponseStarted,
         queue_ms: 2,
@@ -429,6 +430,20 @@ fn fixtures(contracts: &[Contract]) -> Vec<Fixture> {
         true,
         "A response serializer emits null timings even though serde input permits omission.",
     ));
+
+    for field in ["traceId", "spanId"] {
+        let mut missing = serde_json::to_value(&waiting).unwrap();
+        missing.as_object_mut().unwrap().remove(field);
+        output.push(fixture(
+            contracts,
+            format!("diagnostics-missing-{field}"),
+            "diagnostics",
+            missing,
+            false,
+            false,
+            "Service diagnostics always carry both correlation IDs.",
+        ));
+    }
 
     for (state, phase, delivery, code) in [
         (

@@ -21,18 +21,41 @@ export function headersFrom(value: HeadersInput | undefined): [string, string][]
   if (!headerPairs(pairs)) throw new TypeError('Ungültige Anfrageheader.');
   return pairs.filter(([name]) => !['traceparent', 'tracestate', 'baggage'].includes(name.toLowerCase()));
 }
+const legacyTraceId = '11111111111111111111111111111111';
+const legacySpanId = '1111111111111111';
+function schemaDiagnostics(value: unknown): unknown {
+  if (!record(value) || 'spanId' in value) return value;
+  // The old service could send a trace ID without a span ID, or neither.
+  // Supply only missing fields to the generated new-service schema, never to callers.
+  return { ...value, ...(!('traceId' in value) ? { traceId: legacyTraceId } : {}), spanId: legacySpanId };
+}
+export function validateDiagnosticEnvelope(
+  name: 'responseMetadata' | 'transportError' | 'requestStatus', value: unknown,
+): boolean {
+  if (validateWire(name, value)) return true;
+  if (!record(value) || !record(value.diagnostics)) return false;
+  const normalized: Record<string, unknown> = { ...value, diagnostics: schemaDiagnostics(value.diagnostics) };
+  if (name === 'requestStatus' && record(value.error)) {
+    normalized.error = { ...value.error, diagnostics: schemaDiagnostics(value.error.diagnostics) };
+  }
+  return validateWire(name, normalized);
+}
+
 export function diagnostics(value: unknown, requestId?: string, attempt?: number): value is Ja3Diagnostics {
-  if (!validateWire('diagnostics', value) || !record(value)) return false;
+  if (!record(value) || !validateWire('diagnostics', schemaDiagnostics(value))) return false;
   return opaque(value.requestId) && (requestId === undefined || value.requestId === requestId) &&
     (attempt === undefined || value.attempt === attempt) &&
     typeof value.tlsProfile === 'string' && (value.tlsProfile === '' ? value.delivery === 'not_started' : /^[a-z0-9_.]{1,64}$/.test(value.tlsProfile)) &&
-    (value.traceId === undefined || (typeof value.traceId === 'string' && /^(?!0{32}$)[a-f0-9]{32}$/.test(value.traceId))) &&
+    (value.traceId === undefined
+      ? value.spanId === undefined
+      : typeof value.traceId === 'string' && /^(?!0{32}$)[a-f0-9]{32}$/.test(value.traceId) &&
+        (value.spanId === undefined || (typeof value.spanId === 'string' && /^(?!0{16}$)[a-f0-9]{16}$/.test(value.spanId)))) &&
     (value.contextId === undefined || opaque(value.contextId)) &&
     (value.clientReused === undefined || typeof value.clientReused === 'boolean') &&
     (value.cookieRevision === undefined || nonnegativeInteger(value.cookieRevision));
 }
 export function responseMetadata(value: unknown, requestId: string, attempt: number): value is ResponseMetadata {
-  return validateWire('responseMetadata', value) && record(value) && value.requestId === requestId &&
+  return validateDiagnosticEnvelope('responseMetadata', value) && record(value) && value.requestId === requestId &&
     typeof value.status === 'number' && value.status >= 200 && value.status <= 599 && headerPairs(value.headers) &&
     diagnostics(value.diagnostics, requestId, attempt) && value.diagnostics.delivery === 'response_started' &&
     (value.cookieRevision === undefined || nonnegativeInteger(value.cookieRevision));

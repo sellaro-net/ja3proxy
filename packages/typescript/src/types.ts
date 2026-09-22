@@ -6,8 +6,9 @@ export type Result<T, E = Ja3ProxyTransportError> = { ok: true; value: T } | { o
 export type Ja3BrowserIdentity = Omit<Wire.ContextInfo['identity'], 'userAgent'> & { userAgent?: NonNullable<Wire.ContextInfo['identity']['userAgent']> };
 export type ConnectionSpec = Omit<NonNullable<Wire.RequestMetadata['connection']>, 'identity'> & { identity: Ja3BrowserIdentity };
 export type Ja3Egress = ConnectionSpec['egress'];
-export type Ja3Diagnostics = Omit<Fields<Wire.Diagnostics>, 'traceId' | 'clientReused' | 'contextId' | 'cookieRevision'> & {
+export type Ja3Diagnostics = Omit<Fields<Wire.Diagnostics>, 'traceId' | 'spanId' | 'clientReused' | 'contextId' | 'cookieRevision'> & {
   traceId?: NonNullable<Wire.Diagnostics['traceId']>;
+  spanId?: NonNullable<Wire.Diagnostics['spanId']>;
   clientReused?: NonNullable<Wire.Diagnostics['clientReused']>;
   contextId?: NonNullable<Wire.Diagnostics['contextId']>;
   cookieRevision?: NonNullable<Wire.Diagnostics['cookieRevision']>;

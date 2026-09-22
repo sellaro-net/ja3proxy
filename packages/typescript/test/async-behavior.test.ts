@@ -28,7 +28,7 @@ async function readEnvelope(init: RequestInit | undefined): Promise<Envelope> {
   return { requestId: value.requestId, attempt: value.attempt, method: value.method, ...(typeof value.contextId === 'string' ? { contextId: value.contextId } : {}) };
 }
 function metadata(envelope: Envelope, revision?: number, status = 200): { bytes: Uint8Array; diagnostics: Ja3Diagnostics } {
-  const diagnostics: Ja3Diagnostics = { ...initialDiagnostics(envelope.requestId, envelope.attempt, connection.identity.tlsProfile), phase: 'body', delivery: 'response_started', headersMs: 1, totalMs: 1, ...(envelope.contextId ? { contextId: envelope.contextId } : {}), ...(revision === undefined ? {} : { cookieRevision: revision }) };
+  const diagnostics: Ja3Diagnostics = { ...initialDiagnostics(envelope.requestId, envelope.attempt, connection.identity.tlsProfile), traceId: 'a'.repeat(32), spanId: 'b'.repeat(16), phase: 'body', delivery: 'response_started', headersMs: 1, totalMs: 1, ...(envelope.contextId ? { contextId: envelope.contextId } : {}), ...(revision === undefined ? {} : { cookieRevision: revision }) };
   return { bytes: frame(1, jsonBytes({ requestId: envelope.requestId, status, headers: [['content-type', 'text/plain']], diagnostics, ...(revision === undefined ? {} : { cookieRevision: revision }) })), diagnostics };
 }
 function response(envelope: Envelope, tail: (diag: Ja3Diagnostics) => Promise<Uint8Array[]> | Uint8Array[], revision?: number, status = 200): Response {
@@ -66,6 +66,8 @@ test('terminal failure is authoritative even after body bytes and resolves compl
     assert.equal(result.ok, false);
     if (!result.ok) {
       assert.equal(result.error.diagnostics.responseBytes, 3);
+      assert.equal(result.error.diagnostics.traceId, 'a'.repeat(32));
+      assert.equal(result.error.diagnostics.spanId, 'b'.repeat(16));
       assert(!JSON.stringify(result.error).includes('wire-secret'));
       assert(!String(result.error).includes('raw-secret'));
     }
@@ -260,7 +262,7 @@ test('pre-dispatch service failures may omit a TLS profile but response headers 
     if (!started) {
       return Response.json({
         code: 'BUSY', message: 'private service detail',
-        diagnostics: initialDiagnostics(envelope.requestId, envelope.attempt, ''),
+        diagnostics: { ...initialDiagnostics(envelope.requestId, envelope.attempt, ''), traceId: 'a'.repeat(32), spanId: 'b'.repeat(16) },
       }, { status: 503 });
     }
     const first = metadata(envelope);

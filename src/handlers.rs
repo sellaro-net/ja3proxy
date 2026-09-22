@@ -13,7 +13,7 @@ use crate::{
     },
     network::{NetworkClient, NetworkPolicy},
     protocol::{self, FrameReader},
-    registry::{ExecutionGuard, Registry, RequestRecord, ResponseGuard},
+    registry::{ExecutionGuard, Registry, RequestRecord, RequestStatus, ResponseGuard},
 };
 use axum::{
     Json,
@@ -33,6 +33,7 @@ use std::{
 };
 use tokio::sync::{Semaphore, mpsc};
 use tokio_util::sync::CancellationToken;
+use tracing::Instrument;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -199,10 +200,20 @@ pub async fn request_handler(
     .await
     .map_err(|_| TransportError::from_code(ErrorCode::Timeout))??;
     validate_metadata(&metadata, &state.config)?;
+    let context = auth::trace_context(&parts.headers);
+    let span = tracing::info_span!(
+        "transport_request",
+        request_id = %metadata.request_id,
+        attempt = metadata.attempt,
+        trace_id = %context.trace_id,
+        span_id = %context.span_id,
+        parent_span_id = context.parent_span_id.as_deref().unwrap_or("")
+    );
     let diagnostics = Diagnostics {
         request_id: metadata.request_id.clone(),
         attempt: metadata.attempt,
-        trace_id: auth::trace_id(&parts.headers),
+        trace_id: context.trace_id,
+        span_id: context.span_id,
         phase: Phase::Queued,
         delivery: Delivery::NotStarted,
         queue_ms: 0,
@@ -228,7 +239,11 @@ pub async fn request_handler(
         .enter(format!("{PRINCIPAL}:{}", metadata.partition))
     {
         Ok(ticket) => ticket,
-        Err(error) => return Err(record.finish(Some(error)).error.unwrap()),
+        Err(error) => {
+            let status = record.finish(Some(error));
+            span.in_scope(|| log_terminal(&status));
+            return Err(status.error.unwrap());
+        }
     };
     let queued = Instant::now();
     drop(envelope);
@@ -254,11 +269,7 @@ pub async fn request_handler(
             }
         });
         let status = worker_record.finish(result.err());
-        tracing::info!(request_id = %status.diagnostics.request_id, trace_id = ?status.diagnostics.trace_id,
-            attempt = status.diagnostics.attempt, phase = ?status.diagnostics.phase,
-            delivery = ?status.diagnostics.delivery, total_ms = status.diagnostics.total_ms,
-            request_bytes = status.diagnostics.request_bytes, response_bytes = status.diagnostics.response_bytes,
-            code = ?status.error.as_ref().map(|error| error.code), "Transportversuch beendet");
+        log_terminal(&status);
         // A separate terminal slot cannot be blocked by a slow consumer's full data channel.
         // Dropping execute above has already released sockets, upload and admission resources.
         let bytes = match status.error {
@@ -268,7 +279,7 @@ pub async fn request_handler(
         if let Ok(bytes) = bytes {
             *terminal_out.lock() = Some(bytes);
         }
-    });
+    }.instrument(span));
     let guard = ResponseGuard::new(record);
     let stream = async_stream::stream! {
         let _guard = guard;
@@ -288,6 +299,21 @@ pub async fn request_handler(
         .headers_mut()
         .insert("x-accel-buffering", "no".parse().unwrap());
     Ok(response)
+}
+fn log_terminal(status: &RequestStatus) {
+    tracing::info!(
+        request_id = %status.diagnostics.request_id,
+        trace_id = %status.diagnostics.trace_id,
+        span_id = %status.diagnostics.span_id,
+        attempt = status.diagnostics.attempt,
+        phase = ?status.diagnostics.phase,
+        delivery = ?status.diagnostics.delivery,
+        total_ms = status.diagnostics.total_ms,
+        request_bytes = status.diagnostics.request_bytes,
+        response_bytes = status.diagnostics.response_bytes,
+        code = ?status.error.as_ref().map(|error| error.code),
+        "Transportversuch beendet"
+    );
 }
 
 enum ClientOwner {
@@ -803,6 +829,112 @@ mod tests {
             2
         );
         assert_eq!(output.last().unwrap().0, 3);
+    }
+
+    struct LogWriter(Arc<Mutex<Vec<u8>>>);
+    impl Write for LogWriter {
+        fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+            self.0.lock().extend_from_slice(bytes);
+            Ok(bytes.len())
+        }
+        fn flush(&mut self) -> std::io::Result<()> {
+            Ok(())
+        }
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn correlates_success_and_terminal_failure_with_trace_context() {
+        let logs = Arc::new(Mutex::new(Vec::new()));
+        let writer = logs.clone();
+        let subscriber = tracing_subscriber::fmt()
+            .with_max_level(tracing::Level::INFO)
+            .with_writer(move || LogWriter(writer.clone()))
+            .with_ansi(false)
+            .without_time()
+            .finish();
+        let _guard = tracing::subscriber::set_default(subscriber);
+        let upstream = spawn(Router::new().route("/", get(|| async { "ok" }))).await;
+        let state = AppState::new(Config::for_test());
+        let success = frames(
+            request_handler(
+                State(state.clone()),
+                envelope(
+                    format!("http://{}/", upstream.address),
+                    "trace-success",
+                    1024,
+                    5000,
+                ),
+            )
+            .await
+            .unwrap(),
+        )
+        .await;
+        let metadata: Value = serde_json::from_slice(&success[0].1).unwrap();
+        let terminal: Value = serde_json::from_slice(&success.last().unwrap().1).unwrap();
+        assert_eq!(success.last().unwrap().0, 3);
+        assert_eq!(metadata["diagnostics"]["traceId"], terminal["traceId"]);
+        assert_eq!(metadata["diagnostics"]["spanId"], terminal["spanId"]);
+        let generated_trace = terminal["traceId"].as_str().unwrap();
+        let generated_span = terminal["spanId"].as_str().unwrap();
+        assert_eq!(generated_trace.len(), 32);
+        assert_eq!(generated_span.len(), 16);
+        assert!(generated_trace.bytes().all(|byte| byte.is_ascii_hexdigit()));
+        assert!(generated_span.bytes().all(|byte| byte.is_ascii_hexdigit()));
+
+        let parent = "00-0123456789abcdef0123456789abcdef-0123456789abcdef-01";
+        let failed = frames(
+            request_handler(State(state.clone()), {
+                let mut request =
+                    envelope("http://127.0.0.1:1/".into(), "trace-failure", 1024, 5000);
+                request
+                    .headers_mut()
+                    .insert("traceparent", parent.parse().unwrap());
+                request
+            })
+            .await
+            .unwrap(),
+        )
+        .await;
+        assert_eq!(failed.last().unwrap().0, 4);
+        let error: Value = serde_json::from_slice(&failed.last().unwrap().1).unwrap();
+        let diagnostics = &error["diagnostics"];
+        assert_eq!(diagnostics["traceId"], "0123456789abcdef0123456789abcdef");
+        let server_span = diagnostics["spanId"].as_str().unwrap();
+        assert_eq!(server_span.len(), 16);
+        assert_ne!(server_span, "0123456789abcdef");
+        let status = state
+            .registry
+            .get(PRINCIPAL, "test-partition", "trace-failure")
+            .unwrap()
+            .status();
+        assert_eq!(
+            serde_json::to_value(&status.diagnostics).unwrap()["spanId"],
+            diagnostics["spanId"]
+        );
+        assert_eq!(
+            serde_json::to_value(status.error.unwrap()).unwrap()["diagnostics"],
+            *diagnostics
+        );
+        let output = String::from_utf8(logs.lock().clone()).unwrap();
+        for id in [
+            generated_trace,
+            generated_span,
+            "0123456789abcdef0123456789abcdef",
+            server_span,
+        ] {
+            assert!(
+                output.contains(id),
+                "missing {id} from terminal logs: {output}"
+            );
+        }
+        assert!(
+            output.contains("parent_span_id=\"0123456789abcdef\""),
+            "{output}"
+        );
+        assert!(
+            output.contains("trace-success") && output.contains("trace-failure"),
+            "{output}"
+        );
     }
 
     #[tokio::test]

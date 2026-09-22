@@ -4,7 +4,7 @@ import { copyDiagnostics, initialDiagnostics, Ja3ProxyTransportError, localError
 import { createScopedFetch } from './fetch.js';
 import { validateWire } from './generated/validators.js';
 import { Observation } from './observation.js';
-import { CONTENT_TYPE, copyResponseMetadata, diagnostics, encoder, FrameReader, headersFrom, jsonBytes, nonnegativeInteger, opaque, parseJson, positive, record, responseMetadata, uploadFrames } from './protocol.js';
+import { CONTENT_TYPE, copyResponseMetadata, diagnostics, encoder, FrameReader, headersFrom, jsonBytes, nonnegativeInteger, opaque, parseJson, positive, record, responseMetadata, uploadFrames, validateDiagnosticEnvelope } from './protocol.js';
 import { Service, validateConnection, validatePartition } from './service.js';
 import { createSession, type SessionHandle } from './sessions.js';
 import type { BufferedResponse, Capabilities, ClientOptions, CloseOptions, ConnectionSpec, ExternalSession, ExternalSessionOptions, FetchOptions, Ja3Diagnostics, ManagedSession, ManagedSessionOptions, RequestOptions, RequestStatus, ResponseMetadata, Result, ScopedFetch, SessionOptions, StreamingResponse } from './types.js';
@@ -44,7 +44,7 @@ export class Ja3ProxyClient {
     const operation = this.lifetime.begin(this.#service.controlTimeoutMs, signal);
     try {
       const value = await this.#service.control(`requests/${encodeURIComponent(requestId)}/status`, 'POST', { partition }, operation.deadline.signal);
-      if (!validateWire('requestStatus', value) || !record(value) || !diagnostics(value.diagnostics, requestId) || !['queued', 'active', 'complete', 'failed'].includes(String(value.state))) throw localError('PROTOCOL_ERROR');
+      if (!validateDiagnosticEnvelope('requestStatus', value) || !record(value) || !diagnostics(value.diagnostics, requestId) || !['queued', 'active', 'complete', 'failed'].includes(String(value.state))) throw localError('PROTOCOL_ERROR');
       if (value.state === 'failed') {
         if (value.error === undefined) throw localError('PROTOCOL_ERROR');
         return { state: 'failed', diagnostics: copyDiagnostics(value.diagnostics), error: this.#service.transportError(value.error, value.diagnostics, false, true) };
@@ -61,7 +61,7 @@ export class Ja3ProxyClient {
     const operation = this.lifetime.begin(this.#service.controlTimeoutMs, signal);
     try {
       const value = await this.#service.control(`requests/${encodeURIComponent(requestId)}`, 'DELETE', { partition }, operation.deadline.signal);
-      if (!validateWire('requestStatus', value) || !record(value) || !diagnostics(value.diagnostics, requestId)) throw localError('PROTOCOL_ERROR');
+      if (!validateDiagnosticEnvelope('requestStatus', value) || !record(value) || !diagnostics(value.diagnostics, requestId)) throw localError('PROTOCOL_ERROR');
     } finally { operation.done(); }
   }
   request(options: RequestOptions): Promise<BufferedResponse> { return this.buffer(this.stream(options)); }

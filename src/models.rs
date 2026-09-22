@@ -75,8 +75,8 @@ pub enum Delivery {
 pub struct Diagnostics {
     pub request_id: String,
     pub attempt: u64,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub trace_id: Option<String>,
+    pub trace_id: String,
+    pub span_id: String,
     pub phase: Phase,
     pub delivery: Delivery,
     pub queue_ms: u64,

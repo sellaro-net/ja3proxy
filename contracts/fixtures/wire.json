@@ -50,8 +50,10 @@
           "requestBytes": 0,
           "requestId": "contract-request",
           "responseBytes": 4,
+          "spanId": "fedcba9876543210",
           "tlsProfile": "chrome_133",
-          "totalMs": 13
+          "totalMs": 13,
+          "traceId": "0123456789abcdef0123456789abcdef"
         },
         "headers": [
           [
@@ -90,8 +92,10 @@
         "requestBytes": 0,
         "requestId": "contract-request",
         "responseBytes": 4,
+        "spanId": "fedcba9876543210",
         "tlsProfile": "chrome_133",
-        "totalMs": 13
+        "totalMs": 13,
+        "traceId": "0123456789abcdef0123456789abcdef"
       }
     },
     {
@@ -115,8 +119,10 @@
           "requestBytes": 0,
           "requestId": "contract-request",
           "responseBytes": 4,
+          "spanId": "fedcba9876543210",
           "tlsProfile": "chrome_133",
-          "totalMs": 13
+          "totalMs": 13,
+          "traceId": "0123456789abcdef0123456789abcdef"
         },
         "message": "Die Anfrage wurde abgebrochen."
       }
@@ -6849,8 +6855,10 @@
           "requestBytes": 0,
           "requestId": "contract-request",
           "responseBytes": 4,
+          "spanId": "fedcba9876543210",
           "tlsProfile": "chrome_133",
-          "totalMs": 13
+          "totalMs": 13,
+          "traceId": "0123456789abcdef0123456789abcdef"
         },
         "state": "complete"
       }
@@ -6992,8 +7000,10 @@
           "requestBytes": 0,
           "requestId": "contract-request",
           "responseBytes": 4,
+          "spanId": "fedcba9876543210",
           "tlsProfile": "chrome_133",
-          "totalMs": 13
+          "totalMs": 13,
+          "traceId": "0123456789abcdef0123456789abcdef"
         },
         "headers": [
           [
@@ -7034,8 +7044,10 @@
           "requestBytes": 0,
           "requestId": "contract-request",
           "responseBytes": 4,
+          "spanId": "fedcba9876543210",
           "tlsProfile": "chrome_133",
-          "totalMs": 13
+          "totalMs": 13,
+          "traceId": "0123456789abcdef0123456789abcdef"
         },
         "headers": [
           [
@@ -7076,8 +7088,10 @@
           "requestBytes": 0,
           "requestId": "contract-request",
           "responseBytes": 4,
+          "spanId": "fedcba9876543210",
           "tlsProfile": "chrome_133",
-          "totalMs": 13
+          "totalMs": 13,
+          "traceId": "0123456789abcdef0123456789abcdef"
         },
         "headers": [
           [
@@ -7118,8 +7132,10 @@
           "requestBytes": 0,
           "requestId": "contract-request",
           "responseBytes": 4,
+          "spanId": "fedcba9876543210",
           "tlsProfile": "chrome_133",
-          "totalMs": 13
+          "totalMs": 13,
+          "traceId": "0123456789abcdef0123456789abcdef"
         },
         "headers": [
           [
@@ -7158,8 +7174,10 @@
         "requestBytes": 0,
         "requestId": "contract-request",
         "responseBytes": 9007199254740991,
+        "spanId": "fedcba9876543210",
         "tlsProfile": "chrome_133",
-        "totalMs": 13
+        "totalMs": 13,
+        "traceId": "0123456789abcdef0123456789abcdef"
       }
     },
     {
@@ -7181,8 +7199,10 @@
         "requestBytes": 0,
         "requestId": "contract-request",
         "responseBytes": 9007199254740992,
+        "spanId": "fedcba9876543210",
         "tlsProfile": "chrome_133",
-        "totalMs": 13
+        "totalMs": 13,
+        "traceId": "0123456789abcdef0123456789abcdef"
       }
     },
     {
@@ -7204,8 +7224,10 @@
         "requestBytes": 0,
         "requestId": "contract-request",
         "responseBytes": -1,
+        "spanId": "fedcba9876543210",
         "tlsProfile": "chrome_133",
-        "totalMs": 13
+        "totalMs": 13,
+        "traceId": "0123456789abcdef0123456789abcdef"
       }
     },
     {
@@ -7227,8 +7249,10 @@
         "requestBytes": 0,
         "requestId": "contract-request",
         "responseBytes": 0.5,
+        "spanId": "fedcba9876543210",
         "tlsProfile": "chrome_133",
-        "totalMs": 13
+        "totalMs": 13,
+        "traceId": "0123456789abcdef0123456789abcdef"
       }
     },
     {
@@ -33823,8 +33847,10 @@
           "requestBytes": 0,
           "requestId": "contract-request",
           "responseBytes": 4,
+          "spanId": "fedcba9876543210",
           "tlsProfile": "chrome_133",
-          "totalMs": 13
+          "totalMs": 13,
+          "traceId": "0123456789abcdef0123456789abcdef"
         },
         "state": "complete"
       }
@@ -33849,8 +33875,10 @@
           "requestBytes": 0,
           "requestId": "contract-request",
           "responseBytes": 4,
+          "spanId": "fedcba9876543210",
           "tlsProfile": "chrome_133",
-          "totalMs": 13
+          "totalMs": 13,
+          "traceId": "0123456789abcdef0123456789abcdef"
         },
         "state": "complete"
       }
@@ -33875,8 +33903,10 @@
           "requestBytes": 0,
           "requestId": "contract-request",
           "responseBytes": 4,
+          "spanId": "fedcba9876543210",
           "tlsProfile": "chrome_133",
-          "totalMs": 13
+          "totalMs": 13,
+          "traceId": "0123456789abcdef0123456789abcdef"
         },
         "state": "complete"
       }
@@ -33901,8 +33931,10 @@
           "requestBytes": 0,
           "requestId": "contract-request",
           "responseBytes": 4,
+          "spanId": "fedcba9876543210",
           "tlsProfile": "chrome_133",
-          "totalMs": 13
+          "totalMs": 13,
+          "traceId": "0123456789abcdef0123456789abcdef"
         },
         "state": "complete"
       }
@@ -33928,8 +33960,10 @@
           "requestBytes": 0,
           "requestId": "contract-request",
           "responseBytes": 4,
+          "spanId": "fedcba9876543210",
           "tlsProfile": "chrome_133",
-          "totalMs": 13
+          "totalMs": 13,
+          "traceId": "0123456789abcdef0123456789abcdef"
         },
         "headers": [
           [
@@ -33970,8 +34004,10 @@
           "requestBytes": 0,
           "requestId": "contract-request",
           "responseBytes": 4,
+          "spanId": "fedcba9876543210",
           "tlsProfile": "chrome_133",
-          "totalMs": 13
+          "totalMs": 13,
+          "traceId": "0123456789abcdef0123456789abcdef"
         },
         "headers": [
           [
@@ -34011,8 +34047,10 @@
         "requestBytes": 0,
         "requestId": "contract-request",
         "responseBytes": 4,
+        "spanId": "fedcba9876543210",
         "tlsProfile": "chrome_133",
-        "totalMs": 13
+        "totalMs": 13,
+        "traceId": "0123456789abcdef0123456789abcdef"
       }
     },
     {
@@ -34034,8 +34072,10 @@
         "requestBytes": 0,
         "requestId": "contract-request",
         "responseBytes": 4,
+        "spanId": "fedcba9876543210",
         "tlsProfile": "chrome_133",
-        "totalMs": 13
+        "totalMs": 13,
+        "traceId": "0123456789abcdef0123456789abcdef"
       }
     },
     {
@@ -34059,8 +34099,10 @@
           "requestBytes": 0,
           "requestId": "contract-request",
           "responseBytes": 4,
+          "spanId": "fedcba9876543210",
           "tlsProfile": "chrome_133",
-          "totalMs": 13
+          "totalMs": 13,
+          "traceId": "0123456789abcdef0123456789abcdef"
         },
         "message": "Die Anfrage wurde abgebrochen."
       }
@@ -40707,8 +40749,10 @@
           "requestBytes": 0,
           "requestId": "contract-request",
           "responseBytes": 4,
+          "spanId": "fedcba9876543210",
           "tlsProfile": "chrome_133",
-          "totalMs": 13
+          "totalMs": 13,
+          "traceId": "0123456789abcdef0123456789abcdef"
         },
         "state": "retrying"
       }
@@ -40786,8 +40830,10 @@
         "requestBytes": 0,
         "requestId": "contract-request",
         "responseBytes": 4,
+        "spanId": "fedcba9876543210",
         "tlsProfile": "chrome_133",
-        "totalMs": 13
+        "totalMs": 13,
+        "traceId": "0123456789abcdef0123456789abcdef"
       }
     },
     {
@@ -40805,8 +40851,52 @@
         "requestBytes": 0,
         "requestId": "contract-request",
         "responseBytes": 4,
+        "spanId": "fedcba9876543210",
+        "tlsProfile": "chrome_133",
+        "totalMs": 13,
+        "traceId": "0123456789abcdef0123456789abcdef"
+      }
+    },
+    {
+      "contract": "diagnostics",
+      "name": "diagnostics-missing-traceId",
+      "reason": "Service diagnostics always carry both correlation IDs.",
+      "rustAccepts": false,
+      "valid": false,
+      "value": {
+        "attempt": 1,
+        "bodyMs": null,
+        "delivery": "not_started",
+        "headersMs": null,
+        "phase": "queued",
+        "queueMs": 2,
+        "requestBytes": 0,
+        "requestId": "contract-request",
+        "responseBytes": 4,
+        "spanId": "fedcba9876543210",
         "tlsProfile": "chrome_133",
         "totalMs": 13
+      }
+    },
+    {
+      "contract": "diagnostics",
+      "name": "diagnostics-missing-spanId",
+      "reason": "Service diagnostics always carry both correlation IDs.",
+      "rustAccepts": false,
+      "valid": false,
+      "value": {
+        "attempt": 1,
+        "bodyMs": null,
+        "delivery": "not_started",
+        "headersMs": null,
+        "phase": "queued",
+        "queueMs": 2,
+        "requestBytes": 0,
+        "requestId": "contract-request",
+        "responseBytes": 4,
+        "tlsProfile": "chrome_133",
+        "totalMs": 13,
+        "traceId": "0123456789abcdef0123456789abcdef"
       }
     },
     {
@@ -40829,8 +40919,10 @@
           "requestBytes": 0,
           "requestId": "contract-request",
           "responseBytes": 4,
+          "spanId": "fedcba9876543210",
           "tlsProfile": "chrome_133",
-          "totalMs": 13
+          "totalMs": 13,
+          "traceId": "0123456789abcdef0123456789abcdef"
         },
         "state": "queued"
       }
@@ -40855,8 +40947,10 @@
           "requestBytes": 0,
           "requestId": "contract-request",
           "responseBytes": 4,
+          "spanId": "fedcba9876543210",
           "tlsProfile": "chrome_133",
-          "totalMs": 13
+          "totalMs": 13,
+          "traceId": "0123456789abcdef0123456789abcdef"
         },
         "state": "active"
       }
@@ -40881,8 +40975,10 @@
           "requestBytes": 0,
           "requestId": "contract-request",
           "responseBytes": 4,
+          "spanId": "fedcba9876543210",
           "tlsProfile": "chrome_133",
-          "totalMs": 13
+          "totalMs": 13,
+          "traceId": "0123456789abcdef0123456789abcdef"
         },
         "error": {
           "code": "CANCELLED",
@@ -40899,8 +40995,10 @@
             "requestBytes": 0,
             "requestId": "contract-request",
             "responseBytes": 4,
+            "spanId": "fedcba9876543210",
             "tlsProfile": "chrome_133",
-            "totalMs": 13
+            "totalMs": 13,
+            "traceId": "0123456789abcdef0123456789abcdef"
           },
           "message": "Die Anfrage wurde abgebrochen."
         },

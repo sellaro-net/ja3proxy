@@ -7,7 +7,7 @@ import type {
   Ja3Diagnostics, RebindOutcome, RequestStatus, Result,
 } from '../types.js';
 import {
-  config, decodeError, identity, integer, invalid, keys, localError, MAX_METADATA_BYTES, MAX_TIMEOUT_MS,
+  config, decodeError, identity, integer, invalid, ipcDiagnostics, keys, localError, MAX_METADATA_BYTES, MAX_TIMEOUT_MS,
   object, request, response, result, sessionOptions, sessionRequest, text, uncertainError, url, wire,
 } from './ipc.js';
 import type { BridgeConfig, Operation } from './ipc.js';
@@ -169,7 +169,7 @@ export class Ja3ProxySyncClient {
   requestStatus(requestId: string, partition: string): RequestStatus {
     const output = object(this.#call('requestStatus', { requestId: text(requestId, 128), partition: text(partition, 1024) }));
     if (output.state !== 'queued' && output.state !== 'active' && output.state !== 'complete' && output.state !== 'failed') throw localError('PROTOCOL_ERROR');
-    return { state: output.state, diagnostics: wire<Ja3Diagnostics>('diagnostics', output.diagnostics),
+    return { state: output.state, diagnostics: ipcDiagnostics(output.diagnostics),
       ...(output.error === undefined ? {} : { error: decodeError(output.error) }) };
   }
   cancelRequest(requestId: string, partition: string): void {

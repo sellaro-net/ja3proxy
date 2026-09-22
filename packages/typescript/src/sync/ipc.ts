@@ -1,6 +1,7 @@
 import { Ja3ProxyTransportError, isJa3ProxyError } from '@sellaro/ja3proxy';
 import { initialDiagnostics } from '../errors.js';
 import { validateWire } from '../generated/validators.js';
+import { diagnostics } from '../protocol.js';
 import { ERROR_CODES } from '../types.js';
 import type {
   ClientOptions, ConnectionSpec, Ja3BrowserIdentity, Ja3Diagnostics, Ja3ErrorCode,
@@ -189,6 +190,7 @@ export function encodeError(value: unknown): SerializedError {
     bodyMs: diagnostics.bodyMs, totalMs: diagnostics.totalMs, requestBytes: diagnostics.requestBytes,
     responseBytes: diagnostics.responseBytes, tlsProfile: diagnostics.tlsProfile,
     ...(diagnostics.traceId === undefined ? {} : { traceId: diagnostics.traceId }),
+    ...(diagnostics.spanId === undefined ? {} : { spanId: diagnostics.spanId }),
     ...(diagnostics.clientReused === undefined ? {} : { clientReused: diagnostics.clientReused }),
     ...(diagnostics.contextId === undefined ? {} : { contextId: diagnostics.contextId }),
     ...(diagnostics.cookieRevision === undefined ? {} : { cookieRevision: diagnostics.cookieRevision }),
@@ -198,13 +200,17 @@ export function wire<T>(name: Parameters<typeof validateWire>[0], value: unknown
   if (!validateWire(name, value)) throw localError('PROTOCOL_ERROR');
   return value as T;
 }
+export function ipcDiagnostics(value: unknown): Ja3Diagnostics {
+  if (diagnostics(value)) return value;
+  throw localError('PROTOCOL_ERROR');
+}
 export function decodeError(value: unknown): Ja3ProxyTransportError {
   const input = object(value);
   const code = ERROR_CODES.find(code => code === input.code);
   const kinds: readonly Ja3ProxyFailureKind[] = ['proxy_unreachable', 'service_unavailable', 'connection_lost', 'unknown', 'client_closed', 'queue_full', 'buffer_limit', 'invalid_input', 'worker_unavailable'];
   const kind = kinds.find(kind => kind === input.kind);
   if (code === undefined || kind === undefined || typeof input.usedProxy !== 'boolean') throw localError('PROTOCOL_ERROR');
-  return new Ja3ProxyTransportError(code, wire<Ja3Diagnostics>('diagnostics', input.diagnostics), input.usedProxy, kind);
+  return new Ja3ProxyTransportError(code, ipcDiagnostics(input.diagnostics), input.usedProxy, kind);
 }
 export function plainResponse(value: PlainResponse): PlainResponse {
   return { status: value.status, headers: value.headers, body: compactBytes(value.body), elapsed: value.elapsed, diagnostics: value.diagnostics };
@@ -221,7 +227,7 @@ export function response(value: unknown): SyncBufferedResponse {
   }
   const body = input.body;
   return { status: input.status, headers: restoredHeaders, body, elapsed: input.elapsed,
-    diagnostics: wire<Ja3Diagnostics>('diagnostics', input.diagnostics),
+    diagnostics: ipcDiagnostics(input.diagnostics),
     text() { return new TextDecoder().decode(body); },
     json(): unknown { return JSON.parse(this.text()); },
     parseJson<T>(decode: (value: unknown) => T extends PromiseLike<unknown> ? never : T): T {

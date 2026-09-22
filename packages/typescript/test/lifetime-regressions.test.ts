@@ -33,7 +33,7 @@ async function envelope(init: RequestInit | undefined): Promise<Incoming> {
   return { requestId: metadata.requestId, attempt: metadata.attempt, timeoutMs: metadata.timeoutMs, ...(typeof metadata.contextId === 'string' ? { contextId: metadata.contextId } : {}), body: Buffer.concat(pieces) };
 }
 function framed(incoming: Incoming): Response {
-  const diagnostics = { ...initialDiagnostics(incoming.requestId, incoming.attempt, connection.identity.tlsProfile), phase: 'body' as const, delivery: 'response_started' as const, headersMs: 1, requestBytes: incoming.body.length, ...(incoming.contextId ? { contextId: incoming.contextId } : {}) };
+  const diagnostics = { ...initialDiagnostics(incoming.requestId, incoming.attempt, connection.identity.tlsProfile), traceId: 'a'.repeat(32), spanId: 'b'.repeat(16), phase: 'body' as const, delivery: 'response_started' as const, headersMs: 1, requestBytes: incoming.body.length, ...(incoming.contextId ? { contextId: incoming.contextId } : {}) };
   const data = new TextEncoder().encode('ok');
   return new Response(new ReadableStream<Uint8Array>({ start(controller) {
     controller.enqueue(frame(1, jsonBytes({ requestId: incoming.requestId, status: 200, headers: [], diagnostics })));
@@ -281,6 +281,7 @@ async function delayedSessionDeadline(context: TestContext, mode: 'managed' | 'l
         serverExpired = true;
         const diagnostics = {
           ...initialDiagnostics(incoming.requestId, incoming.attempt, connection.identity.tlsProfile),
+          traceId: 'a'.repeat(32), spanId: 'b'.repeat(16),
           phase: 'upstream', delivery: 'possibly_sent', totalMs: incoming.timeoutMs,
           contextId: incoming.contextId,
         };
