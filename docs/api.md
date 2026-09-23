@@ -24,6 +24,17 @@ too. Control requests and responses use JSON; `/request` uses binary framing.
 The DELETE endpoints and request-status endpoint take `{ "partition": "demo" }`
 as their JSON body. Never place secrets or cookie snapshots in query strings.
 
+For service-side correlation, callers may send a W3C `traceparent` HTTP header
+to the service (including through the SDK's `serviceHeaders` hook). A valid
+version `00` header has lowercase, nonzero 32-hex trace and 16-hex parent-span
+IDs. The service continues that trace with its own new span ID; it does not
+reuse the incoming parent-span ID. Without valid incoming context, the service
+starts a new trace. `tracestate` and `baggage` are not exposed in diagnostics.
+
+The terminal request log records `trace_id` and `span_id` on both success and
+failure; its request span also records `parent_span_id` when a valid parent was
+received. This is local structured logging, not a telemetry exporter.
+
 ### Capabilities
 
 `GET /capabilities` identifies the service with `service: "ja3proxy"` and exposes:
@@ -205,12 +216,13 @@ strict, and capacity failures are not hidden. See [cookie examples](usage.md#coo
 
 ## Diagnostics
 
-The terminal diagnostics contain:
+This service's diagnostics (response metadata, terminal frames, status and
+errors with diagnostics) contain:
 
 | Fields | Meaning |
 |---|---|
 | `requestId`, `attempt` | Correlation with the exact request/attempt |
-| `traceId` | Optional validated incoming W3C trace ID |
+| `traceId`, `spanId` | Required matching trace context: nonzero lowercase 32-hex trace ID (continued from valid incoming `traceparent` or newly created), and nonzero lowercase 16-hex service span ID |
 | `phase` | `queued`, `preparing`, `upstream`, `body`, `complete` |
 | `delivery` | `not_started`, `possibly_sent`, `response_started` |
 | `queueMs`, `headersMs`, `bodyMs`, `totalMs` | Measured times; unavailable header/body times are null |
@@ -225,8 +237,16 @@ not finding an old request is not proof it was never sent.
 
 A cancellation request signals owned work; final diagnostics are committed only
 after execution can no longer send. `possibly_sent` must never be treated as
-permission to replay a write. Internal trace headers are not sent to upstream
-providers.
+permission to replay a write. The SDK's pre-service/local failure diagnostics
+have neither ID. During a mixed-version rollout, the SDK also accepts diagnostics
+from the earlier service with a valid `traceId` but no `spanId` when it received
+`traceparent`, or neither ID otherwise. It rejects a span ID without a trace ID
+and malformed IDs. This service always emits both IDs.
+
+Trace context is for service-side correlation only: the SDK removes
+`traceparent`, `tracestate` and `baggage` from upstream request headers, and
+the service rejects them if supplied in upstream metadata. None is forwarded
+to providers or included in error messages.
 
 ## Errors
 

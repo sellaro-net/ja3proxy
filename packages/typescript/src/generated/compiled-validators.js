@@ -632,8 +632,8 @@ function validate10(data, { instancePath = "", parentData, parentDataProperty, r
   return errors === 0;
 }
 var responseMetadata = validate13;
-var schema15 = { "$id": "https://ja3proxy.invalid/contracts/responseMetadata.schema.json", "$schema": "http://json-schema.org/draft-07/schema#", "definitions": { "Delivery": { "enum": ["not_started", "possibly_sent", "response_started"], "type": "string" }, "Diagnostics": { "properties": { "attempt": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "bodyMs": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "clientReused": { "type": ["boolean", "null"] }, "contextId": { "type": ["string", "null"] }, "cookieRevision": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "delivery": { "$ref": "#/definitions/Delivery" }, "headersMs": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "phase": { "$ref": "#/definitions/Phase" }, "queueMs": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "requestBytes": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "requestId": { "type": "string" }, "responseBytes": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "tlsProfile": { "type": "string" }, "totalMs": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "traceId": { "type": ["string", "null"] } }, "required": ["requestId", "attempt", "phase", "delivery", "queueMs", "headersMs", "bodyMs", "totalMs", "requestBytes", "responseBytes", "tlsProfile"], "type": "object" }, "Phase": { "enum": ["queued", "preparing", "upstream", "body", "complete"], "type": "string" } }, "properties": { "cookieRevision": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "diagnostics": { "$ref": "#/definitions/Diagnostics" }, "headers": { "items": { "items": [{ "type": "string" }, { "type": "string" }], "maxItems": 2, "minItems": 2, "type": "array" }, "type": "array" }, "requestId": { "type": "string" }, "status": { "format": "uint16", "maximum": 65535, "minimum": 0, "type": "integer" } }, "required": ["requestId", "status", "headers", "diagnostics"], "title": "ResponseMetadata", "type": "object" };
-var schema16 = { "properties": { "attempt": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "bodyMs": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "clientReused": { "type": ["boolean", "null"] }, "contextId": { "type": ["string", "null"] }, "cookieRevision": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "delivery": { "$ref": "#/definitions/Delivery" }, "headersMs": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "phase": { "$ref": "#/definitions/Phase" }, "queueMs": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "requestBytes": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "requestId": { "type": "string" }, "responseBytes": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "tlsProfile": { "type": "string" }, "totalMs": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "traceId": { "type": ["string", "null"] } }, "required": ["requestId", "attempt", "phase", "delivery", "queueMs", "headersMs", "bodyMs", "totalMs", "requestBytes", "responseBytes", "tlsProfile"], "type": "object" };
+var schema15 = { "$id": "https://ja3proxy.invalid/contracts/responseMetadata.schema.json", "$schema": "http://json-schema.org/draft-07/schema#", "definitions": { "Delivery": { "enum": ["not_started", "possibly_sent", "response_started"], "type": "string" }, "Diagnostics": { "properties": { "attempt": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "bodyMs": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "clientReused": { "type": ["boolean", "null"] }, "contextId": { "type": ["string", "null"] }, "cookieRevision": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "delivery": { "$ref": "#/definitions/Delivery" }, "headersMs": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "phase": { "$ref": "#/definitions/Phase" }, "queueMs": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "requestBytes": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "requestId": { "type": "string" }, "responseBytes": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "spanId": { "type": "string" }, "tlsProfile": { "type": "string" }, "totalMs": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "traceId": { "type": "string" } }, "required": ["requestId", "attempt", "traceId", "spanId", "phase", "delivery", "queueMs", "headersMs", "bodyMs", "totalMs", "requestBytes", "responseBytes", "tlsProfile"], "type": "object" }, "Phase": { "enum": ["queued", "preparing", "upstream", "body", "complete"], "type": "string" } }, "properties": { "cookieRevision": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "diagnostics": { "$ref": "#/definitions/Diagnostics" }, "headers": { "items": { "items": [{ "type": "string" }, { "type": "string" }], "maxItems": 2, "minItems": 2, "type": "array" }, "type": "array" }, "requestId": { "type": "string" }, "status": { "format": "uint16", "maximum": 65535, "minimum": 0, "type": "integer" } }, "required": ["requestId", "status", "headers", "diagnostics"], "title": "ResponseMetadata", "type": "object" };
+var schema16 = { "properties": { "attempt": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "bodyMs": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "clientReused": { "type": ["boolean", "null"] }, "contextId": { "type": ["string", "null"] }, "cookieRevision": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "delivery": { "$ref": "#/definitions/Delivery" }, "headersMs": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "phase": { "$ref": "#/definitions/Phase" }, "queueMs": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "requestBytes": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "requestId": { "type": "string" }, "responseBytes": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "spanId": { "type": "string" }, "tlsProfile": { "type": "string" }, "totalMs": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "traceId": { "type": "string" } }, "required": ["requestId", "attempt", "traceId", "spanId", "phase", "delivery", "queueMs", "headersMs", "bodyMs", "totalMs", "requestBytes", "responseBytes", "tlsProfile"], "type": "object" };
 var schema17 = { "enum": ["not_started", "possibly_sent", "response_started"], "type": "string" };
 var schema18 = { "enum": ["queued", "preparing", "upstream", "body", "complete"], "type": "string" };
 function validate14(data, { instancePath = "", parentData, parentDataProperty, rootData = data } = {}) {
@@ -642,7 +642,7 @@ function validate14(data, { instancePath = "", parentData, parentDataProperty, r
   if (errors === 0) {
     if (data && typeof data == "object" && !Array.isArray(data)) {
       let missing0;
-      if (data.requestId === void 0 && (missing0 = "requestId") || data.attempt === void 0 && (missing0 = "attempt") || data.phase === void 0 && (missing0 = "phase") || data.delivery === void 0 && (missing0 = "delivery") || data.queueMs === void 0 && (missing0 = "queueMs") || data.headersMs === void 0 && (missing0 = "headersMs") || data.bodyMs === void 0 && (missing0 = "bodyMs") || data.totalMs === void 0 && (missing0 = "totalMs") || data.requestBytes === void 0 && (missing0 = "requestBytes") || data.responseBytes === void 0 && (missing0 = "responseBytes") || data.tlsProfile === void 0 && (missing0 = "tlsProfile")) {
+      if (data.requestId === void 0 && (missing0 = "requestId") || data.attempt === void 0 && (missing0 = "attempt") || data.traceId === void 0 && (missing0 = "traceId") || data.spanId === void 0 && (missing0 = "spanId") || data.phase === void 0 && (missing0 = "phase") || data.delivery === void 0 && (missing0 = "delivery") || data.queueMs === void 0 && (missing0 = "queueMs") || data.headersMs === void 0 && (missing0 = "headersMs") || data.bodyMs === void 0 && (missing0 = "bodyMs") || data.totalMs === void 0 && (missing0 = "totalMs") || data.requestBytes === void 0 && (missing0 = "requestBytes") || data.responseBytes === void 0 && (missing0 = "responseBytes") || data.tlsProfile === void 0 && (missing0 = "tlsProfile")) {
         validate14.errors = [{ instancePath, schemaPath: "#/required", keyword: "required", params: { missingProperty: missing0 }, message: "must have required property '" + missing0 + "'" }];
         return false;
       } else {
@@ -888,10 +888,10 @@ function validate14(data, { instancePath = "", parentData, parentDataProperty, r
                                 var valid0 = true;
                               }
                               if (valid0) {
-                                if (data.tlsProfile !== void 0) {
+                                if (data.spanId !== void 0) {
                                   const _errs27 = errors;
-                                  if (typeof data.tlsProfile !== "string") {
-                                    validate14.errors = [{ instancePath: instancePath + "/tlsProfile", schemaPath: "#/properties/tlsProfile/type", keyword: "type", params: { type: "string" }, message: "must be string" }];
+                                  if (typeof data.spanId !== "string") {
+                                    validate14.errors = [{ instancePath: instancePath + "/spanId", schemaPath: "#/properties/spanId/type", keyword: "type", params: { type: "string" }, message: "must be string" }];
                                     return false;
                                   }
                                   var valid0 = _errs27 === errors;
@@ -899,41 +899,52 @@ function validate14(data, { instancePath = "", parentData, parentDataProperty, r
                                   var valid0 = true;
                                 }
                                 if (valid0) {
-                                  if (data.totalMs !== void 0) {
-                                    let data13 = data.totalMs;
+                                  if (data.tlsProfile !== void 0) {
                                     const _errs29 = errors;
-                                    if (!(typeof data13 == "number" && (!(data13 % 1) && !isNaN(data13)) && isFinite(data13))) {
-                                      validate14.errors = [{ instancePath: instancePath + "/totalMs", schemaPath: "#/properties/totalMs/type", keyword: "type", params: { type: "integer" }, message: "must be integer" }];
+                                    if (typeof data.tlsProfile !== "string") {
+                                      validate14.errors = [{ instancePath: instancePath + "/tlsProfile", schemaPath: "#/properties/tlsProfile/type", keyword: "type", params: { type: "string" }, message: "must be string" }];
                                       return false;
-                                    }
-                                    if (errors === _errs29) {
-                                      if (typeof data13 == "number" && isFinite(data13)) {
-                                        if (data13 > 9007199254740991 || isNaN(data13)) {
-                                          validate14.errors = [{ instancePath: instancePath + "/totalMs", schemaPath: "#/properties/totalMs/maximum", keyword: "maximum", params: { comparison: "<=", limit: 9007199254740991 }, message: "must be <= 9007199254740991" }];
-                                          return false;
-                                        } else {
-                                          if (data13 < 0 || isNaN(data13)) {
-                                            validate14.errors = [{ instancePath: instancePath + "/totalMs", schemaPath: "#/properties/totalMs/minimum", keyword: "minimum", params: { comparison: ">=", limit: 0 }, message: "must be >= 0" }];
-                                            return false;
-                                          }
-                                        }
-                                      }
                                     }
                                     var valid0 = _errs29 === errors;
                                   } else {
                                     var valid0 = true;
                                   }
                                   if (valid0) {
-                                    if (data.traceId !== void 0) {
-                                      let data14 = data.traceId;
+                                    if (data.totalMs !== void 0) {
+                                      let data14 = data.totalMs;
                                       const _errs31 = errors;
-                                      if (typeof data14 !== "string" && data14 !== null) {
-                                        validate14.errors = [{ instancePath: instancePath + "/traceId", schemaPath: "#/properties/traceId/type", keyword: "type", params: { type: schema16.properties.traceId.type }, message: "must be string,null" }];
+                                      if (!(typeof data14 == "number" && (!(data14 % 1) && !isNaN(data14)) && isFinite(data14))) {
+                                        validate14.errors = [{ instancePath: instancePath + "/totalMs", schemaPath: "#/properties/totalMs/type", keyword: "type", params: { type: "integer" }, message: "must be integer" }];
                                         return false;
+                                      }
+                                      if (errors === _errs31) {
+                                        if (typeof data14 == "number" && isFinite(data14)) {
+                                          if (data14 > 9007199254740991 || isNaN(data14)) {
+                                            validate14.errors = [{ instancePath: instancePath + "/totalMs", schemaPath: "#/properties/totalMs/maximum", keyword: "maximum", params: { comparison: "<=", limit: 9007199254740991 }, message: "must be <= 9007199254740991" }];
+                                            return false;
+                                          } else {
+                                            if (data14 < 0 || isNaN(data14)) {
+                                              validate14.errors = [{ instancePath: instancePath + "/totalMs", schemaPath: "#/properties/totalMs/minimum", keyword: "minimum", params: { comparison: ">=", limit: 0 }, message: "must be >= 0" }];
+                                              return false;
+                                            }
+                                          }
+                                        }
                                       }
                                       var valid0 = _errs31 === errors;
                                     } else {
                                       var valid0 = true;
+                                    }
+                                    if (valid0) {
+                                      if (data.traceId !== void 0) {
+                                        const _errs33 = errors;
+                                        if (typeof data.traceId !== "string") {
+                                          validate14.errors = [{ instancePath: instancePath + "/traceId", schemaPath: "#/properties/traceId/type", keyword: "type", params: { type: "string" }, message: "must be string" }];
+                                          return false;
+                                        }
+                                        var valid0 = _errs33 === errors;
+                                      } else {
+                                        var valid0 = true;
+                                      }
                                     }
                                   }
                                 }
@@ -1115,7 +1126,7 @@ function validate13(data, { instancePath = "", parentData, parentDataProperty, r
   return errors === 0;
 }
 var diagnostics = validate16;
-var schema19 = { "$id": "https://ja3proxy.invalid/contracts/diagnostics.schema.json", "$schema": "http://json-schema.org/draft-07/schema#", "definitions": { "Delivery": { "enum": ["not_started", "possibly_sent", "response_started"], "type": "string" }, "Phase": { "enum": ["queued", "preparing", "upstream", "body", "complete"], "type": "string" } }, "properties": { "attempt": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "bodyMs": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "clientReused": { "type": ["boolean", "null"] }, "contextId": { "type": ["string", "null"] }, "cookieRevision": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "delivery": { "$ref": "#/definitions/Delivery" }, "headersMs": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "phase": { "$ref": "#/definitions/Phase" }, "queueMs": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "requestBytes": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "requestId": { "type": "string" }, "responseBytes": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "tlsProfile": { "type": "string" }, "totalMs": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "traceId": { "type": ["string", "null"] } }, "required": ["requestId", "attempt", "phase", "delivery", "queueMs", "headersMs", "bodyMs", "totalMs", "requestBytes", "responseBytes", "tlsProfile"], "title": "Diagnostics", "type": "object" };
+var schema19 = { "$id": "https://ja3proxy.invalid/contracts/diagnostics.schema.json", "$schema": "http://json-schema.org/draft-07/schema#", "definitions": { "Delivery": { "enum": ["not_started", "possibly_sent", "response_started"], "type": "string" }, "Phase": { "enum": ["queued", "preparing", "upstream", "body", "complete"], "type": "string" } }, "properties": { "attempt": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "bodyMs": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "clientReused": { "type": ["boolean", "null"] }, "contextId": { "type": ["string", "null"] }, "cookieRevision": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "delivery": { "$ref": "#/definitions/Delivery" }, "headersMs": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "phase": { "$ref": "#/definitions/Phase" }, "queueMs": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "requestBytes": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "requestId": { "type": "string" }, "responseBytes": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "spanId": { "type": "string" }, "tlsProfile": { "type": "string" }, "totalMs": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "traceId": { "type": "string" } }, "required": ["requestId", "attempt", "traceId", "spanId", "phase", "delivery", "queueMs", "headersMs", "bodyMs", "totalMs", "requestBytes", "responseBytes", "tlsProfile"], "title": "Diagnostics", "type": "object" };
 var schema20 = { "enum": ["not_started", "possibly_sent", "response_started"], "type": "string" };
 var schema21 = { "enum": ["queued", "preparing", "upstream", "body", "complete"], "type": "string" };
 function validate16(data, { instancePath = "", parentData, parentDataProperty, rootData = data } = {}) {
@@ -1125,7 +1136,7 @@ function validate16(data, { instancePath = "", parentData, parentDataProperty, r
   if (errors === 0) {
     if (data && typeof data == "object" && !Array.isArray(data)) {
       let missing0;
-      if (data.requestId === void 0 && (missing0 = "requestId") || data.attempt === void 0 && (missing0 = "attempt") || data.phase === void 0 && (missing0 = "phase") || data.delivery === void 0 && (missing0 = "delivery") || data.queueMs === void 0 && (missing0 = "queueMs") || data.headersMs === void 0 && (missing0 = "headersMs") || data.bodyMs === void 0 && (missing0 = "bodyMs") || data.totalMs === void 0 && (missing0 = "totalMs") || data.requestBytes === void 0 && (missing0 = "requestBytes") || data.responseBytes === void 0 && (missing0 = "responseBytes") || data.tlsProfile === void 0 && (missing0 = "tlsProfile")) {
+      if (data.requestId === void 0 && (missing0 = "requestId") || data.attempt === void 0 && (missing0 = "attempt") || data.traceId === void 0 && (missing0 = "traceId") || data.spanId === void 0 && (missing0 = "spanId") || data.phase === void 0 && (missing0 = "phase") || data.delivery === void 0 && (missing0 = "delivery") || data.queueMs === void 0 && (missing0 = "queueMs") || data.headersMs === void 0 && (missing0 = "headersMs") || data.bodyMs === void 0 && (missing0 = "bodyMs") || data.totalMs === void 0 && (missing0 = "totalMs") || data.requestBytes === void 0 && (missing0 = "requestBytes") || data.responseBytes === void 0 && (missing0 = "responseBytes") || data.tlsProfile === void 0 && (missing0 = "tlsProfile")) {
         validate16.errors = [{ instancePath, schemaPath: "#/required", keyword: "required", params: { missingProperty: missing0 }, message: "must have required property '" + missing0 + "'" }];
         return false;
       } else {
@@ -1371,10 +1382,10 @@ function validate16(data, { instancePath = "", parentData, parentDataProperty, r
                                 var valid0 = true;
                               }
                               if (valid0) {
-                                if (data.tlsProfile !== void 0) {
+                                if (data.spanId !== void 0) {
                                   const _errs27 = errors;
-                                  if (typeof data.tlsProfile !== "string") {
-                                    validate16.errors = [{ instancePath: instancePath + "/tlsProfile", schemaPath: "#/properties/tlsProfile/type", keyword: "type", params: { type: "string" }, message: "must be string" }];
+                                  if (typeof data.spanId !== "string") {
+                                    validate16.errors = [{ instancePath: instancePath + "/spanId", schemaPath: "#/properties/spanId/type", keyword: "type", params: { type: "string" }, message: "must be string" }];
                                     return false;
                                   }
                                   var valid0 = _errs27 === errors;
@@ -1382,41 +1393,52 @@ function validate16(data, { instancePath = "", parentData, parentDataProperty, r
                                   var valid0 = true;
                                 }
                                 if (valid0) {
-                                  if (data.totalMs !== void 0) {
-                                    let data13 = data.totalMs;
+                                  if (data.tlsProfile !== void 0) {
                                     const _errs29 = errors;
-                                    if (!(typeof data13 == "number" && (!(data13 % 1) && !isNaN(data13)) && isFinite(data13))) {
-                                      validate16.errors = [{ instancePath: instancePath + "/totalMs", schemaPath: "#/properties/totalMs/type", keyword: "type", params: { type: "integer" }, message: "must be integer" }];
+                                    if (typeof data.tlsProfile !== "string") {
+                                      validate16.errors = [{ instancePath: instancePath + "/tlsProfile", schemaPath: "#/properties/tlsProfile/type", keyword: "type", params: { type: "string" }, message: "must be string" }];
                                       return false;
-                                    }
-                                    if (errors === _errs29) {
-                                      if (typeof data13 == "number" && isFinite(data13)) {
-                                        if (data13 > 9007199254740991 || isNaN(data13)) {
-                                          validate16.errors = [{ instancePath: instancePath + "/totalMs", schemaPath: "#/properties/totalMs/maximum", keyword: "maximum", params: { comparison: "<=", limit: 9007199254740991 }, message: "must be <= 9007199254740991" }];
-                                          return false;
-                                        } else {
-                                          if (data13 < 0 || isNaN(data13)) {
-                                            validate16.errors = [{ instancePath: instancePath + "/totalMs", schemaPath: "#/properties/totalMs/minimum", keyword: "minimum", params: { comparison: ">=", limit: 0 }, message: "must be >= 0" }];
-                                            return false;
-                                          }
-                                        }
-                                      }
                                     }
                                     var valid0 = _errs29 === errors;
                                   } else {
                                     var valid0 = true;
                                   }
                                   if (valid0) {
-                                    if (data.traceId !== void 0) {
-                                      let data14 = data.traceId;
+                                    if (data.totalMs !== void 0) {
+                                      let data14 = data.totalMs;
                                       const _errs31 = errors;
-                                      if (typeof data14 !== "string" && data14 !== null) {
-                                        validate16.errors = [{ instancePath: instancePath + "/traceId", schemaPath: "#/properties/traceId/type", keyword: "type", params: { type: schema19.properties.traceId.type }, message: "must be string,null" }];
+                                      if (!(typeof data14 == "number" && (!(data14 % 1) && !isNaN(data14)) && isFinite(data14))) {
+                                        validate16.errors = [{ instancePath: instancePath + "/totalMs", schemaPath: "#/properties/totalMs/type", keyword: "type", params: { type: "integer" }, message: "must be integer" }];
                                         return false;
+                                      }
+                                      if (errors === _errs31) {
+                                        if (typeof data14 == "number" && isFinite(data14)) {
+                                          if (data14 > 9007199254740991 || isNaN(data14)) {
+                                            validate16.errors = [{ instancePath: instancePath + "/totalMs", schemaPath: "#/properties/totalMs/maximum", keyword: "maximum", params: { comparison: "<=", limit: 9007199254740991 }, message: "must be <= 9007199254740991" }];
+                                            return false;
+                                          } else {
+                                            if (data14 < 0 || isNaN(data14)) {
+                                              validate16.errors = [{ instancePath: instancePath + "/totalMs", schemaPath: "#/properties/totalMs/minimum", keyword: "minimum", params: { comparison: ">=", limit: 0 }, message: "must be >= 0" }];
+                                              return false;
+                                            }
+                                          }
+                                        }
                                       }
                                       var valid0 = _errs31 === errors;
                                     } else {
                                       var valid0 = true;
+                                    }
+                                    if (valid0) {
+                                      if (data.traceId !== void 0) {
+                                        const _errs33 = errors;
+                                        if (typeof data.traceId !== "string") {
+                                          validate16.errors = [{ instancePath: instancePath + "/traceId", schemaPath: "#/properties/traceId/type", keyword: "type", params: { type: "string" }, message: "must be string" }];
+                                          return false;
+                                        }
+                                        var valid0 = _errs33 === errors;
+                                      } else {
+                                        var valid0 = true;
+                                      }
                                     }
                                   }
                                 }
@@ -1443,7 +1465,7 @@ function validate16(data, { instancePath = "", parentData, parentDataProperty, r
 }
 var transportError = validate17;
 var schema23 = { "enum": ["UNAUTHORIZED", "INVALID_REQUEST", "UNSUPPORTED_CAPABILITY", "INVALID_PROFILE", "EGRESS_REQUIRED", "SSRF_BLOCKED", "BODY_TOO_LARGE", "BUSY", "TIMEOUT", "CANCELLED", "DNS_ERROR", "PROXY_ERROR", "TLS_ERROR", "CONNECT_ERROR", "PROTOCOL_ERROR", "CONTEXT_NOT_FOUND", "CONTEXT_CONFLICT", "CONTEXT_LIMIT", "COOKIE_LIMIT", "DUPLICATE_REQUEST", "UNKNOWN"], "type": "string" };
-var schema24 = { "properties": { "attempt": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "bodyMs": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "clientReused": { "type": ["boolean", "null"] }, "contextId": { "type": ["string", "null"] }, "cookieRevision": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "delivery": { "$ref": "#/definitions/Delivery" }, "headersMs": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "phase": { "$ref": "#/definitions/Phase" }, "queueMs": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "requestBytes": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "requestId": { "type": "string" }, "responseBytes": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "tlsProfile": { "type": "string" }, "totalMs": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "traceId": { "type": ["string", "null"] } }, "required": ["requestId", "attempt", "phase", "delivery", "queueMs", "headersMs", "bodyMs", "totalMs", "requestBytes", "responseBytes", "tlsProfile"], "type": "object" };
+var schema24 = { "properties": { "attempt": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "bodyMs": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "clientReused": { "type": ["boolean", "null"] }, "contextId": { "type": ["string", "null"] }, "cookieRevision": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "delivery": { "$ref": "#/definitions/Delivery" }, "headersMs": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "phase": { "$ref": "#/definitions/Phase" }, "queueMs": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "requestBytes": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "requestId": { "type": "string" }, "responseBytes": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "spanId": { "type": "string" }, "tlsProfile": { "type": "string" }, "totalMs": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "traceId": { "type": "string" } }, "required": ["requestId", "attempt", "traceId", "spanId", "phase", "delivery", "queueMs", "headersMs", "bodyMs", "totalMs", "requestBytes", "responseBytes", "tlsProfile"], "type": "object" };
 var schema25 = { "enum": ["not_started", "possibly_sent", "response_started"], "type": "string" };
 var schema26 = { "enum": ["queued", "preparing", "upstream", "body", "complete"], "type": "string" };
 function validate18(data, { instancePath = "", parentData, parentDataProperty, rootData = data } = {}) {
@@ -1452,7 +1474,7 @@ function validate18(data, { instancePath = "", parentData, parentDataProperty, r
   if (errors === 0) {
     if (data && typeof data == "object" && !Array.isArray(data)) {
       let missing0;
-      if (data.requestId === void 0 && (missing0 = "requestId") || data.attempt === void 0 && (missing0 = "attempt") || data.phase === void 0 && (missing0 = "phase") || data.delivery === void 0 && (missing0 = "delivery") || data.queueMs === void 0 && (missing0 = "queueMs") || data.headersMs === void 0 && (missing0 = "headersMs") || data.bodyMs === void 0 && (missing0 = "bodyMs") || data.totalMs === void 0 && (missing0 = "totalMs") || data.requestBytes === void 0 && (missing0 = "requestBytes") || data.responseBytes === void 0 && (missing0 = "responseBytes") || data.tlsProfile === void 0 && (missing0 = "tlsProfile")) {
+      if (data.requestId === void 0 && (missing0 = "requestId") || data.attempt === void 0 && (missing0 = "attempt") || data.traceId === void 0 && (missing0 = "traceId") || data.spanId === void 0 && (missing0 = "spanId") || data.phase === void 0 && (missing0 = "phase") || data.delivery === void 0 && (missing0 = "delivery") || data.queueMs === void 0 && (missing0 = "queueMs") || data.headersMs === void 0 && (missing0 = "headersMs") || data.bodyMs === void 0 && (missing0 = "bodyMs") || data.totalMs === void 0 && (missing0 = "totalMs") || data.requestBytes === void 0 && (missing0 = "requestBytes") || data.responseBytes === void 0 && (missing0 = "responseBytes") || data.tlsProfile === void 0 && (missing0 = "tlsProfile")) {
         validate18.errors = [{ instancePath, schemaPath: "#/required", keyword: "required", params: { missingProperty: missing0 }, message: "must have required property '" + missing0 + "'" }];
         return false;
       } else {
@@ -1698,10 +1720,10 @@ function validate18(data, { instancePath = "", parentData, parentDataProperty, r
                                 var valid0 = true;
                               }
                               if (valid0) {
-                                if (data.tlsProfile !== void 0) {
+                                if (data.spanId !== void 0) {
                                   const _errs27 = errors;
-                                  if (typeof data.tlsProfile !== "string") {
-                                    validate18.errors = [{ instancePath: instancePath + "/tlsProfile", schemaPath: "#/properties/tlsProfile/type", keyword: "type", params: { type: "string" }, message: "must be string" }];
+                                  if (typeof data.spanId !== "string") {
+                                    validate18.errors = [{ instancePath: instancePath + "/spanId", schemaPath: "#/properties/spanId/type", keyword: "type", params: { type: "string" }, message: "must be string" }];
                                     return false;
                                   }
                                   var valid0 = _errs27 === errors;
@@ -1709,41 +1731,52 @@ function validate18(data, { instancePath = "", parentData, parentDataProperty, r
                                   var valid0 = true;
                                 }
                                 if (valid0) {
-                                  if (data.totalMs !== void 0) {
-                                    let data13 = data.totalMs;
+                                  if (data.tlsProfile !== void 0) {
                                     const _errs29 = errors;
-                                    if (!(typeof data13 == "number" && (!(data13 % 1) && !isNaN(data13)) && isFinite(data13))) {
-                                      validate18.errors = [{ instancePath: instancePath + "/totalMs", schemaPath: "#/properties/totalMs/type", keyword: "type", params: { type: "integer" }, message: "must be integer" }];
+                                    if (typeof data.tlsProfile !== "string") {
+                                      validate18.errors = [{ instancePath: instancePath + "/tlsProfile", schemaPath: "#/properties/tlsProfile/type", keyword: "type", params: { type: "string" }, message: "must be string" }];
                                       return false;
-                                    }
-                                    if (errors === _errs29) {
-                                      if (typeof data13 == "number" && isFinite(data13)) {
-                                        if (data13 > 9007199254740991 || isNaN(data13)) {
-                                          validate18.errors = [{ instancePath: instancePath + "/totalMs", schemaPath: "#/properties/totalMs/maximum", keyword: "maximum", params: { comparison: "<=", limit: 9007199254740991 }, message: "must be <= 9007199254740991" }];
-                                          return false;
-                                        } else {
-                                          if (data13 < 0 || isNaN(data13)) {
-                                            validate18.errors = [{ instancePath: instancePath + "/totalMs", schemaPath: "#/properties/totalMs/minimum", keyword: "minimum", params: { comparison: ">=", limit: 0 }, message: "must be >= 0" }];
-                                            return false;
-                                          }
-                                        }
-                                      }
                                     }
                                     var valid0 = _errs29 === errors;
                                   } else {
                                     var valid0 = true;
                                   }
                                   if (valid0) {
-                                    if (data.traceId !== void 0) {
-                                      let data14 = data.traceId;
+                                    if (data.totalMs !== void 0) {
+                                      let data14 = data.totalMs;
                                       const _errs31 = errors;
-                                      if (typeof data14 !== "string" && data14 !== null) {
-                                        validate18.errors = [{ instancePath: instancePath + "/traceId", schemaPath: "#/properties/traceId/type", keyword: "type", params: { type: schema24.properties.traceId.type }, message: "must be string,null" }];
+                                      if (!(typeof data14 == "number" && (!(data14 % 1) && !isNaN(data14)) && isFinite(data14))) {
+                                        validate18.errors = [{ instancePath: instancePath + "/totalMs", schemaPath: "#/properties/totalMs/type", keyword: "type", params: { type: "integer" }, message: "must be integer" }];
                                         return false;
+                                      }
+                                      if (errors === _errs31) {
+                                        if (typeof data14 == "number" && isFinite(data14)) {
+                                          if (data14 > 9007199254740991 || isNaN(data14)) {
+                                            validate18.errors = [{ instancePath: instancePath + "/totalMs", schemaPath: "#/properties/totalMs/maximum", keyword: "maximum", params: { comparison: "<=", limit: 9007199254740991 }, message: "must be <= 9007199254740991" }];
+                                            return false;
+                                          } else {
+                                            if (data14 < 0 || isNaN(data14)) {
+                                              validate18.errors = [{ instancePath: instancePath + "/totalMs", schemaPath: "#/properties/totalMs/minimum", keyword: "minimum", params: { comparison: ">=", limit: 0 }, message: "must be >= 0" }];
+                                              return false;
+                                            }
+                                          }
+                                        }
                                       }
                                       var valid0 = _errs31 === errors;
                                     } else {
                                       var valid0 = true;
+                                    }
+                                    if (valid0) {
+                                      if (data.traceId !== void 0) {
+                                        const _errs33 = errors;
+                                        if (typeof data.traceId !== "string") {
+                                          validate18.errors = [{ instancePath: instancePath + "/traceId", schemaPath: "#/properties/traceId/type", keyword: "type", params: { type: "string" }, message: "must be string" }];
+                                          return false;
+                                        }
+                                        var valid0 = _errs33 === errors;
+                                      } else {
+                                        var valid0 = true;
+                                      }
                                     }
                                   }
                                 }
@@ -5280,7 +5313,7 @@ function validate34(data, { instancePath = "", parentData, parentDataProperty, r
 }
 var requestStatus = validate40;
 var schema60 = { "enum": ["queued", "active", "complete", "failed"], "type": "string" };
-var schema55 = { "properties": { "attempt": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "bodyMs": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "clientReused": { "type": ["boolean", "null"] }, "contextId": { "type": ["string", "null"] }, "cookieRevision": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "delivery": { "$ref": "#/definitions/Delivery" }, "headersMs": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "phase": { "$ref": "#/definitions/Phase" }, "queueMs": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "requestBytes": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "requestId": { "type": "string" }, "responseBytes": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "tlsProfile": { "type": "string" }, "totalMs": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "traceId": { "type": ["string", "null"] } }, "required": ["requestId", "attempt", "phase", "delivery", "queueMs", "headersMs", "bodyMs", "totalMs", "requestBytes", "responseBytes", "tlsProfile"], "type": "object" };
+var schema55 = { "properties": { "attempt": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "bodyMs": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "clientReused": { "type": ["boolean", "null"] }, "contextId": { "type": ["string", "null"] }, "cookieRevision": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "delivery": { "$ref": "#/definitions/Delivery" }, "headersMs": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "phase": { "$ref": "#/definitions/Phase" }, "queueMs": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "requestBytes": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "requestId": { "type": "string" }, "responseBytes": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "spanId": { "type": "string" }, "tlsProfile": { "type": "string" }, "totalMs": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "traceId": { "type": "string" } }, "required": ["requestId", "attempt", "traceId", "spanId", "phase", "delivery", "queueMs", "headersMs", "bodyMs", "totalMs", "requestBytes", "responseBytes", "tlsProfile"], "type": "object" };
 var schema56 = { "enum": ["not_started", "possibly_sent", "response_started"], "type": "string" };
 var schema57 = { "enum": ["queued", "preparing", "upstream", "body", "complete"], "type": "string" };
 function validate41(data, { instancePath = "", parentData, parentDataProperty, rootData = data } = {}) {
@@ -5289,7 +5322,7 @@ function validate41(data, { instancePath = "", parentData, parentDataProperty, r
   if (errors === 0) {
     if (data && typeof data == "object" && !Array.isArray(data)) {
       let missing0;
-      if (data.requestId === void 0 && (missing0 = "requestId") || data.attempt === void 0 && (missing0 = "attempt") || data.phase === void 0 && (missing0 = "phase") || data.delivery === void 0 && (missing0 = "delivery") || data.queueMs === void 0 && (missing0 = "queueMs") || data.headersMs === void 0 && (missing0 = "headersMs") || data.bodyMs === void 0 && (missing0 = "bodyMs") || data.totalMs === void 0 && (missing0 = "totalMs") || data.requestBytes === void 0 && (missing0 = "requestBytes") || data.responseBytes === void 0 && (missing0 = "responseBytes") || data.tlsProfile === void 0 && (missing0 = "tlsProfile")) {
+      if (data.requestId === void 0 && (missing0 = "requestId") || data.attempt === void 0 && (missing0 = "attempt") || data.traceId === void 0 && (missing0 = "traceId") || data.spanId === void 0 && (missing0 = "spanId") || data.phase === void 0 && (missing0 = "phase") || data.delivery === void 0 && (missing0 = "delivery") || data.queueMs === void 0 && (missing0 = "queueMs") || data.headersMs === void 0 && (missing0 = "headersMs") || data.bodyMs === void 0 && (missing0 = "bodyMs") || data.totalMs === void 0 && (missing0 = "totalMs") || data.requestBytes === void 0 && (missing0 = "requestBytes") || data.responseBytes === void 0 && (missing0 = "responseBytes") || data.tlsProfile === void 0 && (missing0 = "tlsProfile")) {
         validate41.errors = [{ instancePath, schemaPath: "#/required", keyword: "required", params: { missingProperty: missing0 }, message: "must have required property '" + missing0 + "'" }];
         return false;
       } else {
@@ -5535,10 +5568,10 @@ function validate41(data, { instancePath = "", parentData, parentDataProperty, r
                                 var valid0 = true;
                               }
                               if (valid0) {
-                                if (data.tlsProfile !== void 0) {
+                                if (data.spanId !== void 0) {
                                   const _errs27 = errors;
-                                  if (typeof data.tlsProfile !== "string") {
-                                    validate41.errors = [{ instancePath: instancePath + "/tlsProfile", schemaPath: "#/properties/tlsProfile/type", keyword: "type", params: { type: "string" }, message: "must be string" }];
+                                  if (typeof data.spanId !== "string") {
+                                    validate41.errors = [{ instancePath: instancePath + "/spanId", schemaPath: "#/properties/spanId/type", keyword: "type", params: { type: "string" }, message: "must be string" }];
                                     return false;
                                   }
                                   var valid0 = _errs27 === errors;
@@ -5546,41 +5579,52 @@ function validate41(data, { instancePath = "", parentData, parentDataProperty, r
                                   var valid0 = true;
                                 }
                                 if (valid0) {
-                                  if (data.totalMs !== void 0) {
-                                    let data13 = data.totalMs;
+                                  if (data.tlsProfile !== void 0) {
                                     const _errs29 = errors;
-                                    if (!(typeof data13 == "number" && (!(data13 % 1) && !isNaN(data13)) && isFinite(data13))) {
-                                      validate41.errors = [{ instancePath: instancePath + "/totalMs", schemaPath: "#/properties/totalMs/type", keyword: "type", params: { type: "integer" }, message: "must be integer" }];
+                                    if (typeof data.tlsProfile !== "string") {
+                                      validate41.errors = [{ instancePath: instancePath + "/tlsProfile", schemaPath: "#/properties/tlsProfile/type", keyword: "type", params: { type: "string" }, message: "must be string" }];
                                       return false;
-                                    }
-                                    if (errors === _errs29) {
-                                      if (typeof data13 == "number" && isFinite(data13)) {
-                                        if (data13 > 9007199254740991 || isNaN(data13)) {
-                                          validate41.errors = [{ instancePath: instancePath + "/totalMs", schemaPath: "#/properties/totalMs/maximum", keyword: "maximum", params: { comparison: "<=", limit: 9007199254740991 }, message: "must be <= 9007199254740991" }];
-                                          return false;
-                                        } else {
-                                          if (data13 < 0 || isNaN(data13)) {
-                                            validate41.errors = [{ instancePath: instancePath + "/totalMs", schemaPath: "#/properties/totalMs/minimum", keyword: "minimum", params: { comparison: ">=", limit: 0 }, message: "must be >= 0" }];
-                                            return false;
-                                          }
-                                        }
-                                      }
                                     }
                                     var valid0 = _errs29 === errors;
                                   } else {
                                     var valid0 = true;
                                   }
                                   if (valid0) {
-                                    if (data.traceId !== void 0) {
-                                      let data14 = data.traceId;
+                                    if (data.totalMs !== void 0) {
+                                      let data14 = data.totalMs;
                                       const _errs31 = errors;
-                                      if (typeof data14 !== "string" && data14 !== null) {
-                                        validate41.errors = [{ instancePath: instancePath + "/traceId", schemaPath: "#/properties/traceId/type", keyword: "type", params: { type: schema55.properties.traceId.type }, message: "must be string,null" }];
+                                      if (!(typeof data14 == "number" && (!(data14 % 1) && !isNaN(data14)) && isFinite(data14))) {
+                                        validate41.errors = [{ instancePath: instancePath + "/totalMs", schemaPath: "#/properties/totalMs/type", keyword: "type", params: { type: "integer" }, message: "must be integer" }];
                                         return false;
+                                      }
+                                      if (errors === _errs31) {
+                                        if (typeof data14 == "number" && isFinite(data14)) {
+                                          if (data14 > 9007199254740991 || isNaN(data14)) {
+                                            validate41.errors = [{ instancePath: instancePath + "/totalMs", schemaPath: "#/properties/totalMs/maximum", keyword: "maximum", params: { comparison: "<=", limit: 9007199254740991 }, message: "must be <= 9007199254740991" }];
+                                            return false;
+                                          } else {
+                                            if (data14 < 0 || isNaN(data14)) {
+                                              validate41.errors = [{ instancePath: instancePath + "/totalMs", schemaPath: "#/properties/totalMs/minimum", keyword: "minimum", params: { comparison: ">=", limit: 0 }, message: "must be >= 0" }];
+                                              return false;
+                                            }
+                                          }
+                                        }
                                       }
                                       var valid0 = _errs31 === errors;
                                     } else {
                                       var valid0 = true;
+                                    }
+                                    if (valid0) {
+                                      if (data.traceId !== void 0) {
+                                        const _errs33 = errors;
+                                        if (typeof data.traceId !== "string") {
+                                          validate41.errors = [{ instancePath: instancePath + "/traceId", schemaPath: "#/properties/traceId/type", keyword: "type", params: { type: "string" }, message: "must be string" }];
+                                          return false;
+                                        }
+                                        var valid0 = _errs33 === errors;
+                                      } else {
+                                        var valid0 = true;
+                                      }
                                     }
                                   }
                                 }

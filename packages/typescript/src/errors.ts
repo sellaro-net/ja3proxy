@@ -30,6 +30,7 @@ export function copyDiagnostics(value: Ja3Diagnostics): Ja3Diagnostics {
     queueMs: value.queueMs, headersMs: value.headersMs, bodyMs: value.bodyMs, totalMs: value.totalMs,
     requestBytes: value.requestBytes, responseBytes: value.responseBytes, tlsProfile: value.tlsProfile,
     ...(value.traceId === undefined ? {} : { traceId: value.traceId }),
+    ...(value.spanId === undefined ? {} : { spanId: value.spanId }),
     ...(value.clientReused === undefined ? {} : { clientReused: value.clientReused }),
     ...(value.contextId === undefined ? {} : { contextId: value.contextId }),
     ...(value.cookieRevision === undefined ? {} : { cookieRevision: value.cookieRevision }),

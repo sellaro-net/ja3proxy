@@ -36,8 +36,9 @@ export interface Diagnostics {
   requestBytes: number;
   requestId: string;
   responseBytes: number;
+  spanId: string;
   tlsProfile: string;
   totalMs: number;
-  traceId?: string | null;
+  traceId: string;
   [k: string]: unknown;
 }

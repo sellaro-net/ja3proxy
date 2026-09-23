@@ -87,6 +87,9 @@
       "minimum": 0,
       "type": "integer"
     },
+    "spanId": {
+      "type": "string"
+    },
     "tlsProfile": {
       "type": "string"
     },
@@ -96,15 +99,14 @@
       "type": "integer"
     },
     "traceId": {
-      "type": [
-        "string",
-        "null"
-      ]
+      "type": "string"
     }
   },
   "required": [
     "requestId",
     "attempt",
+    "traceId",
+    "spanId",
     "phase",
     "delivery",
     "queueMs",

@@ -43,7 +43,7 @@ function json(response, value, status = 200) { response.writeHead(status, {'cont
 function diagnostics(meta, size, phase = 'complete') {
   return {requestId: meta.requestId, attempt: meta.attempt, phase, delivery: 'response_started',
     queueMs: 0, headersMs: 1, bodyMs: 1, totalMs: 2, requestBytes: meta.bodyLength || 0,
-    responseBytes: size, tlsProfile: 'chrome_149', ...(meta.contextId ? {contextId: meta.contextId} : {})};
+    responseBytes: size, tlsProfile: 'chrome_149', traceId: 'a'.repeat(32), spanId: 'b'.repeat(16), ...(meta.contextId ? {contextId: meta.contextId} : {})};
 }
 const server = createServer(async (req, res) => {
   if (req.headers.authorization !== 'Bearer ' + token) return json(res, {code:'UNAUTHORIZED', message:'secret-never-forwarded'}, 401);

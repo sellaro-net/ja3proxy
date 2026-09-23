@@ -1,7 +1,7 @@
 import { Admission, Deadline, Lifetime, MAX_TIMEOUT_MS, timeoutValue } from './concurrency.js';
 import { initialDiagnostics, Ja3ProxyTransportError, localError } from './errors.js';
 import { validateWire } from './generated/validators.js';
-import { capabilities, CONTROL_LIMIT, copyCapabilities, diagnostics, errorCode, jsonBytes, nonnegativeInteger, opaque, parseJson, record } from './protocol.js';
+import { capabilities, CONTROL_LIMIT, copyCapabilities, diagnostics, errorCode, jsonBytes, nonnegativeInteger, opaque, parseJson, record, validateDiagnosticEnvelope } from './protocol.js';
 import type { Capabilities, ClientOptions, ConnectionSpec, Ja3Diagnostics } from './types.js';
 
 export class Service {
@@ -70,7 +70,7 @@ export class Service {
     } finally { void reader.cancel().catch(() => undefined); }
   }
   transportError(value: unknown, fallback: Ja3Diagnostics, usedProxy: boolean, requireDiagnostics = false): Ja3ProxyTransportError {
-    if (!validateWire('transportError', value) || !record(value) || !errorCode(value.code)) return new Ja3ProxyTransportError('PROTOCOL_ERROR', fallback, usedProxy);
+    if (!validateDiagnosticEnvelope('transportError', value) || !record(value) || !errorCode(value.code)) return new Ja3ProxyTransportError('PROTOCOL_ERROR', fallback, usedProxy);
     if (value.diagnostics !== undefined && !diagnostics(value.diagnostics, fallback.requestId === 'control' ? undefined : fallback.requestId, fallback.requestId === 'control' ? undefined : fallback.attempt)) return new Ja3ProxyTransportError('PROTOCOL_ERROR', fallback, usedProxy);
     if (requireDiagnostics && !diagnostics(value.diagnostics, fallback.requestId, fallback.attempt)) return new Ja3ProxyTransportError('PROTOCOL_ERROR', fallback, usedProxy);
     return new Ja3ProxyTransportError(value.code, diagnostics(value.diagnostics) ? value.diagnostics : fallback, usedProxy);

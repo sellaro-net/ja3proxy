@@ -222,7 +222,8 @@ mod tests {
         Diagnostics {
             request_id: "same-id".into(),
             attempt: 1,
-            trace_id: None,
+            trace_id: "0123456789abcdef0123456789abcdef".into(),
+            span_id: "fedcba9876543210".into(),
             phase: Phase::Queued,
             delivery: Delivery::NotStarted,
             queue_ms: 0,
