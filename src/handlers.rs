@@ -852,7 +852,37 @@ mod tests {
             .with_ansi(false)
             .without_time()
             .finish();
+        // tracing-core caches callsite interest process-wide. While exactly one
+        // dispatcher is registered, a callsite is evaluated against the default
+        // of whichever thread hits it first: a parallel test without a
+        // subscriber caches `log_terminal` as "never", and this capture stays
+        // empty (CI, PR #30). A second live dispatcher makes every
+        // registration consult all dispatchers; per-event filtering then
+        // selects this thread's subscriber.
+        let _interest_peer = tracing::Dispatch::new(tracing::subscriber::NoSubscriber::default());
         let _guard = tracing::subscriber::set_default(subscriber);
+        // Reproduce that ordering deterministically: a subscriber-less thread
+        // registers the terminal-log callsite before this test logs.
+        std::thread::spawn(|| {
+            tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .unwrap()
+                .block_on(async {
+                    let peer = AppState::new(Config::for_test());
+                    frames(
+                        request_handler(
+                            State(peer),
+                            envelope("http://127.0.0.1:1/".into(), "trace-peer", 1024, 5000),
+                        )
+                        .await
+                        .unwrap(),
+                    )
+                    .await;
+                });
+        })
+        .join()
+        .unwrap();
         let upstream = spawn(Router::new().route("/", get(|| async { "ok" }))).await;
         let state = AppState::new(Config::for_test());
         let success = frames(
