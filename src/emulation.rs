@@ -12,8 +12,7 @@ use wreq_util::Profile;
 /// algorithms (0x0904-0x0906) in its ClientHello; otherwise its handshake and
 /// HTTP/2 settings equal Chrome 149. Upstream `wreq-util` carries this profile
 /// only on unreleased `main` (`tls_options!(8, CURVES_3, NEW_SIGALGS_LIST)`);
-/// the list below is copied verbatim from there. Since 2026-09-29 StockX
-/// rejects Chrome handshakes without ML-DSA with its bot guard.
+/// the list below is copied verbatim from there.
 const CHROME_150: &str = "chrome_150";
 const CHROME_150_SIGALGS: &str = "mldsa44:mldsa65:mldsa87:ecdsa_secp256r1_sha256:rsa_pss_rsae_sha256:rsa_pkcs1_sha256:ecdsa_secp384r1_sha384:rsa_pss_rsae_sha384:rsa_pkcs1_sha384:rsa_pss_rsae_sha512:rsa_pkcs1_sha512";
 const CHROME_150_USER_AGENT: &str = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36";
