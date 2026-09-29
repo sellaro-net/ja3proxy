@@ -65,3 +65,9 @@ strip = true
 
 [patch.crates-io]
 wreq = { path = "vendor/wreq" }
+# BoringSSL mit ML-DSA im TLS-Signaturalgorithmen-Katalog (mldsa44/65/87), die
+# aktuelles Chrome (>= 150) ankündigt. Dieselbe Revision pinnt wreq-util `main`;
+# das Release 0.5.6 kennt ML-DSA nur als Primitive, nicht in TLS.
+btls = { git = "https://github.com/0x676e67/btls", rev = "129887582a538b8f4dcf371d15c953335312ca37" }
+btls-sys = { git = "https://github.com/0x676e67/btls", rev = "129887582a538b8f4dcf371d15c953335312ca37" }
+tokio-btls = { git = "https://github.com/0x676e67/btls", rev = "129887582a538b8f4dcf371d15c953335312ca37" }
