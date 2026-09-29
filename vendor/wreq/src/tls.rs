@@ -205,6 +205,12 @@ pub struct TlsOptions {
     /// **Default:** `None` (implementation default)
     pub grease_enabled: Option<bool>,
 
+    /// Controls whether the ClientHello `signature_algorithms` extension includes a
+    /// GREASE value ([RFC 8701](https://www.rfc-editor.org/rfc/rfc8701.html)).
+    ///
+    /// **Default:** `None` (implementation default)
+    pub grease_sigalgs_enabled: Option<bool>,
+
     /// Enables OCSP stapling for the connection.
     ///
     /// **Default:** `false`
@@ -229,6 +235,23 @@ pub struct TlsOptions {
     ///
     /// **Default:** `None`
     pub key_shares: Option<Cow<'static, [KeyShare]>>,
+
+    /// Encoded Trust Anchor IDs sent in a TLS 1.3 ClientHello.
+    ///
+    /// Each ID must be non-empty and have a one-byte length prefix; omit the list's outer two-byte
+    /// length. IDs only guide server certificate selection; certificate verification is unchanged.
+    /// `Some(&[])` sends an empty `trust_anchors` extension; `None` omits it. Invalid encoding
+    /// fails TLS setup.
+    ///
+    /// **Default:** `None`
+    pub trust_anchors: Option<Cow<'static, [u8]>>,
+
+    /// Requests this many bytes of server padding with the experimental BoringSSL
+    /// `server_padding` ClientHello extension (0x12e0). `Some(0)` sends the extension with a
+    /// zero-byte request; `None` omits it.
+    ///
+    /// **Default:** `None`
+    pub server_padding_request: Option<u16>,
 
     /// Enables PSK with (EC)DHE key establishment (`psk_dhe_ke`).
     ///
@@ -379,6 +402,17 @@ impl TlsOptionsBuilder {
         self
     }
 
+    /// Sets whether the ClientHello `signature_algorithms` extension includes a
+    /// GREASE value.
+    #[inline]
+    pub fn grease_sigalgs_enabled<T>(mut self, enabled: T) -> Self
+    where
+        T: Into<Option<bool>>,
+    {
+        self.config.grease_sigalgs_enabled = enabled.into();
+        self
+    }
+
     /// Sets the OCSP stapling flag.
     #[inline]
     pub fn enable_ocsp_stapling(mut self, enabled: bool) -> Self {
@@ -438,6 +472,30 @@ impl TlsOptionsBuilder {
         T: Into<Cow<'static, [KeyShare]>>,
     {
         self.config.key_shares = Some(key_shares.into());
+        self
+    }
+
+    /// Sets the encoded Trust Anchor IDs sent in ClientHello.
+    ///
+    /// See [`TlsOptions::trust_anchors`] for the encoding.
+    #[inline]
+    pub fn trust_anchors<T>(mut self, ids: T) -> Self
+    where
+        T: Into<Cow<'static, [u8]>>,
+    {
+        self.config.trust_anchors = Some(ids.into());
+        self
+    }
+
+    /// Sets the server padding request sent in ClientHello.
+    ///
+    /// See [`TlsOptions::server_padding_request`].
+    #[inline]
+    pub fn server_padding_request<T>(mut self, num_bytes: T) -> Self
+    where
+        T: Into<Option<u16>>,
+    {
+        self.config.server_padding_request = num_bytes.into();
         self
     }
 
@@ -558,11 +616,14 @@ impl Default for TlsOptions {
             enable_ech_grease: false,
             permute_extensions: None,
             grease_enabled: None,
+            grease_sigalgs_enabled: None,
             enable_ocsp_stapling: false,
             enable_signed_cert_timestamps: false,
             record_size_limit: None,
             psk_skip_session_ticket: false,
             key_shares: None,
+            trust_anchors: None,
+            server_padding_request: None,
             psk_dhe_ke: true,
             renegotiation: true,
             delegated_credentials: None,

@@ -40,7 +40,7 @@ def main():
     exit_choice.add_argument("--direct", action="store_true")
     exit_choice.add_argument("--proxy", help="HTTP(S) or SOCKS proxy URL")
     exit_choice.add_argument("--context", help="Existing context ID")
-    parser.add_argument("--profile", help="TLS profile for a new connection (default: chrome_149)")
+    parser.add_argument("--profile", help="TLS profile or alias for a new connection (default: chrome_155)")
     parser.add_argument("--no-emulate-headers", action="store_true")
     parser.add_argument("--user-agent")
     parser.add_argument("--method", default="GET")
@@ -103,8 +103,8 @@ def main():
         if args.context:
             metadata["contextId"] = args.context
         else:
-            profile = args.profile or "chrome_149"
-            if profile not in capabilities["profiles"]:
+            profile = args.profile or "chrome_155"
+            if profile not in capabilities["profiles"] and profile not in capabilities.get("profileAliases", {}):
                 raise ValueError("Das TLS-Profil ist nicht verfügbar; siehe /capabilities.")
             identity = {"tlsProfile": profile, "emulateHeaders": not args.no_emulate_headers}
             if args.user_agent:

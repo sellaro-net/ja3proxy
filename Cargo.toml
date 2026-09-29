@@ -56,6 +56,8 @@ anyhow = "1.0.104"
 tokio-btls = "0.5.6"
 rcgen = "0.14"
 flate2 = "1"
+# Rohe HTTP/2-Frames des Clients in Loopback-Golden-Tests dekodieren.
+http2 = { version = "0.5.20", features = ["unstable"] }
 
 [profile.release]
 lto = true
@@ -65,9 +67,14 @@ strip = true
 
 [patch.crates-io]
 wreq = { path = "vendor/wreq" }
-# BoringSSL mit ML-DSA im TLS-Signaturalgorithmen-Katalog (mldsa44/65/87), die
-# aktuelles Chrome (>= 150) ankündigt. Dieselbe Revision pinnt wreq-util `main`;
-# das Release 0.5.6 kennt ML-DSA nur als Primitive, nicht in TLS.
-btls = { git = "https://github.com/0x676e67/btls", rev = "129887582a538b8f4dcf371d15c953335312ca37" }
-btls-sys = { git = "https://github.com/0x676e67/btls", rev = "129887582a538b8f4dcf371d15c953335312ca37" }
-tokio-btls = { git = "https://github.com/0x676e67/btls", rev = "129887582a538b8f4dcf371d15c953335312ca37" }
+# http2 0.5.20 mit Priorität pro Request im HEADERS-Frame (siehe
+# vendor/http2/transport-provenance.json).
+http2 = { path = "vendor/http2" }
+# BoringSSL mit ML-DSA im TLS-Signaturalgorithmen-Katalog (mldsa44/65/87),
+# Signaturalgorithmen-GREASE, Trust-Anchor-IDs und der server_padding-Extension
+# (0x12e0), die aktuelles Chrome (>= 154) ankündigt. Revision 1e98087 ist der
+# Upstream-Commit "feat(ssl): expose server padding extension APIs (#212)"; das
+# Release 0.5.6 kennt ML-DSA nur als Primitive und keine dieser TLS-APIs.
+btls = { git = "https://github.com/0x676e67/btls", rev = "1e980877343872b671d18a185395e31c10cc51d5" }
+btls-sys = { git = "https://github.com/0x676e67/btls", rev = "1e980877343872b671d18a185395e31c10cc51d5" }
+tokio-btls = { git = "https://github.com/0x676e67/btls", rev = "1e980877343872b671d18a185395e31c10cc51d5" }

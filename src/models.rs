@@ -1,6 +1,7 @@
 //! Strict transport wire DTOs. Credentials never appear in diagnostics.
 
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 
 #[derive(Clone, Deserialize, Serialize)]
 #[cfg_attr(feature = "schema-export", derive(schemars::JsonSchema))]
@@ -161,6 +162,9 @@ pub struct Capabilities {
     pub build: String,
     pub profiles: Vec<String>,
     pub header_descriptors: Vec<HeaderDescriptor>,
+    /// Alias name → concrete profile it currently resolves to. Aliases are accepted
+    /// wherever a profile name is; responses report the concrete profile.
+    pub profile_aliases: BTreeMap<String, String>,
     pub framing: FramingCapabilities,
     pub limits: CapabilityLimits,
     pub modes: CapabilityModes,

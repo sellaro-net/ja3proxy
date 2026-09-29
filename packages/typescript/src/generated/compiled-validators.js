@@ -2597,7 +2597,7 @@ function validate25(data, { instancePath = "", parentData, parentDataProperty, r
   if (errors === 0) {
     if (data && typeof data == "object" && !Array.isArray(data)) {
       let missing0;
-      if (data.service === void 0 && (missing0 = "service") || data.build === void 0 && (missing0 = "build") || data.profiles === void 0 && (missing0 = "profiles") || data.headerDescriptors === void 0 && (missing0 = "headerDescriptors") || data.framing === void 0 && (missing0 = "framing") || data.limits === void 0 && (missing0 = "limits") || data.modes === void 0 && (missing0 = "modes")) {
+      if (data.service === void 0 && (missing0 = "service") || data.build === void 0 && (missing0 = "build") || data.profiles === void 0 && (missing0 = "profiles") || data.headerDescriptors === void 0 && (missing0 = "headerDescriptors") || data.profileAliases === void 0 && (missing0 = "profileAliases") || data.framing === void 0 && (missing0 = "framing") || data.limits === void 0 && (missing0 = "limits") || data.modes === void 0 && (missing0 = "modes")) {
         validate25.errors = [{ instancePath, schemaPath: "#/required", keyword: "required", params: { missingProperty: missing0 }, message: "must have required property '" + missing0 + "'" }];
         return false;
       } else {
@@ -3587,26 +3587,24 @@ function validate25(data, { instancePath = "", parentData, parentDataProperty, r
                   var valid0 = true;
                 }
                 if (valid0) {
-                  if (data.profiles !== void 0) {
-                    let data46 = data.profiles;
+                  if (data.profileAliases !== void 0) {
+                    let data46 = data.profileAliases;
                     const _errs97 = errors;
                     if (errors === _errs97) {
-                      if (Array.isArray(data46)) {
-                        var valid16 = true;
-                        const len7 = data46.length;
-                        for (let i6 = 0; i6 < len7; i6++) {
-                          const _errs99 = errors;
-                          if (typeof data46[i6] !== "string") {
-                            validate25.errors = [{ instancePath: instancePath + "/profiles/" + i6, schemaPath: "#/properties/profiles/items/type", keyword: "type", params: { type: "string" }, message: "must be string" }];
+                      if (data46 && typeof data46 == "object" && !Array.isArray(data46)) {
+                        for (const key0 in data46) {
+                          const _errs100 = errors;
+                          if (typeof data46[key0] !== "string") {
+                            validate25.errors = [{ instancePath: instancePath + "/profileAliases/" + key0.replace(/~/g, "~0").replace(/\//g, "~1"), schemaPath: "#/properties/profileAliases/additionalProperties/type", keyword: "type", params: { type: "string" }, message: "must be string" }];
                             return false;
                           }
-                          var valid16 = _errs99 === errors;
+                          var valid16 = _errs100 === errors;
                           if (!valid16) {
                             break;
                           }
                         }
                       } else {
-                        validate25.errors = [{ instancePath: instancePath + "/profiles", schemaPath: "#/properties/profiles/type", keyword: "type", params: { type: "array" }, message: "must be array" }];
+                        validate25.errors = [{ instancePath: instancePath + "/profileAliases", schemaPath: "#/properties/profileAliases/type", keyword: "type", params: { type: "object" }, message: "must be object" }];
                         return false;
                       }
                     }
@@ -3615,20 +3613,49 @@ function validate25(data, { instancePath = "", parentData, parentDataProperty, r
                     var valid0 = true;
                   }
                   if (valid0) {
-                    if (data.service !== void 0) {
-                      let data48 = data.service;
-                      const _errs101 = errors;
-                      if (typeof data48 !== "string") {
-                        validate25.errors = [{ instancePath: instancePath + "/service", schemaPath: "#/definitions/ServiceName/type", keyword: "type", params: { type: "string" }, message: "must be string" }];
-                        return false;
+                    if (data.profiles !== void 0) {
+                      let data48 = data.profiles;
+                      const _errs102 = errors;
+                      if (errors === _errs102) {
+                        if (Array.isArray(data48)) {
+                          var valid17 = true;
+                          const len7 = data48.length;
+                          for (let i6 = 0; i6 < len7; i6++) {
+                            const _errs104 = errors;
+                            if (typeof data48[i6] !== "string") {
+                              validate25.errors = [{ instancePath: instancePath + "/profiles/" + i6, schemaPath: "#/properties/profiles/items/type", keyword: "type", params: { type: "string" }, message: "must be string" }];
+                              return false;
+                            }
+                            var valid17 = _errs104 === errors;
+                            if (!valid17) {
+                              break;
+                            }
+                          }
+                        } else {
+                          validate25.errors = [{ instancePath: instancePath + "/profiles", schemaPath: "#/properties/profiles/type", keyword: "type", params: { type: "array" }, message: "must be array" }];
+                          return false;
+                        }
                       }
-                      if (!(data48 === "ja3proxy")) {
-                        validate25.errors = [{ instancePath: instancePath + "/service", schemaPath: "#/definitions/ServiceName/enum", keyword: "enum", params: { allowedValues: schema40.enum }, message: "must be equal to one of the allowed values" }];
-                        return false;
-                      }
-                      var valid0 = _errs101 === errors;
+                      var valid0 = _errs102 === errors;
                     } else {
                       var valid0 = true;
+                    }
+                    if (valid0) {
+                      if (data.service !== void 0) {
+                        let data50 = data.service;
+                        const _errs106 = errors;
+                        if (typeof data50 !== "string") {
+                          validate25.errors = [{ instancePath: instancePath + "/service", schemaPath: "#/definitions/ServiceName/type", keyword: "type", params: { type: "string" }, message: "must be string" }];
+                          return false;
+                        }
+                        if (!(data50 === "ja3proxy")) {
+                          validate25.errors = [{ instancePath: instancePath + "/service", schemaPath: "#/definitions/ServiceName/enum", keyword: "enum", params: { allowedValues: schema40.enum }, message: "must be equal to one of the allowed values" }];
+                          return false;
+                        }
+                        var valid0 = _errs106 === errors;
+                      } else {
+                        var valid0 = true;
+                      }
                     }
                   }
                 }

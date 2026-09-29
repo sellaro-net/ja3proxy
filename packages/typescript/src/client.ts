@@ -4,7 +4,7 @@ import { copyDiagnostics, initialDiagnostics, Ja3ProxyTransportError, localError
 import { createScopedFetch } from './fetch.js';
 import { validateWire } from './generated/validators.js';
 import { Observation } from './observation.js';
-import { CONTENT_TYPE, copyResponseMetadata, diagnostics, encoder, FrameReader, headersFrom, jsonBytes, nonnegativeInteger, opaque, parseJson, positive, record, responseMetadata, uploadFrames, validateDiagnosticEnvelope } from './protocol.js';
+import { CONTENT_TYPE, copyResponseMetadata, diagnostics, encoder, FrameReader, headersFrom, jsonBytes, nonnegativeInteger, opaque, parseJson, positive, record, resolveProfile, responseMetadata, uploadFrames, validateDiagnosticEnvelope } from './protocol.js';
 import { Service, validateConnection, validatePartition } from './service.js';
 import { createSession, type SessionHandle } from './sessions.js';
 import type { BufferedResponse, Capabilities, ClientOptions, CloseOptions, ConnectionSpec, ExternalSession, ExternalSessionOptions, FetchOptions, Ja3Diagnostics, ManagedSession, ManagedSessionOptions, RequestOptions, RequestStatus, ResponseMetadata, Result, ScopedFetch, SessionOptions, StreamingResponse } from './types.js';
@@ -244,7 +244,7 @@ export class Ja3ProxyClient {
           throw error;
         }
         const value = first?.type === 1 ? parseJson(first.payload) : undefined;
-        if (!responseMetadata(value, requestId, attempt) || (options.contextId !== undefined && value.diagnostics.contextId !== options.contextId) || (connection !== undefined && value.diagnostics.tlsProfile !== connection.identity.tlsProfile)) throw new Ja3ProxyTransportError('PROTOCOL_ERROR', diag, usedProxy);
+        if (!responseMetadata(value, requestId, attempt) || (options.contextId !== undefined && value.diagnostics.contextId !== options.contextId) || (connection !== undefined && value.diagnostics.tlsProfile !== resolveProfile(caps, connection.identity.tlsProfile))) throw new Ja3ProxyTransportError('PROTOCOL_ERROR', diag, usedProxy);
         metadata = copyResponseMetadata(value);
         diag = metadata.diagnostics;
         observation?.responseHeaders(metadata);

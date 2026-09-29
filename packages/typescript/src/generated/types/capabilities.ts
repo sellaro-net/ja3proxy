@@ -12,6 +12,13 @@ export interface Capabilities {
   headerDescriptors: HeaderDescriptor[];
   limits: CapabilityLimits;
   modes: CapabilityModes;
+  /**
+   * Alias name → concrete profile it currently resolves to. Aliases are accepted
+   * wherever a profile name is; responses report the concrete profile.
+   */
+  profileAliases: {
+    [k: string]: string;
+  };
   profiles: string[];
   service: ServiceName;
   [k: string]: unknown;

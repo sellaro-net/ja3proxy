@@ -281,3 +281,30 @@ test('pre-dispatch service failures may omit a TLS profile but response headers 
     await assert.rejects(sdk.stream(target), (error: unknown) => error instanceof Ja3ProxyTransportError && error.code === 'PROTOCOL_ERROR');
   } finally { await sdk.close(); }
 });
+
+test('profile aliases are accepted and must be answered with their concrete profile', async () => {
+  const [alias, concrete] = Object.entries(caps.profileAliases)[0]!;
+  const other = caps.profiles.find(profile => profile !== concrete)!;
+  let reported = concrete;
+  const sdk = client(async (input, init) => {
+    if (new URL(String(input)).pathname === '/capabilities') return Response.json(caps);
+    const envelope = await readEnvelope(init);
+    const first = metadata(envelope);
+    const diagnostics = { ...first.diagnostics, tlsProfile: reported };
+    return new Response(new Blob([
+      frame(1, jsonBytes({ requestId: envelope.requestId, status: 200, headers: [], diagnostics })),
+      ...success(diagnostics),
+    ]).stream(), { headers: { 'content-type': 'application/vnd.ja3proxy' } });
+  });
+  const aliased: RequestOptions = { ...target, connection: { ...connection, identity: { ...connection.identity, tlsProfile: alias } } };
+  try {
+    const accepted = await sdk.tryRequest(aliased);
+    assert(accepted.ok);
+    assert.equal(accepted.value.diagnostics.tlsProfile, concrete);
+    reported = other;
+    const mismatch = await sdk.tryRequest(aliased);
+    assert(!mismatch.ok && mismatch.error.code === 'PROTOCOL_ERROR');
+    const unknown = await sdk.tryRequest({ ...target, connection: { ...connection, identity: { ...connection.identity, tlsProfile: `${alias}_unknown` } } });
+    assert(!unknown.ok && unknown.error.code === 'INVALID_PROFILE');
+  } finally { await sdk.close(); }
+});

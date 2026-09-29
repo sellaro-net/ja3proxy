@@ -541,12 +541,16 @@ async fn header_emulation_and_fixed_user_agent_are_effective_on_wire() {
     let url = format!("http://origin.test:{port}/");
     let inconsistent = client.apply_headers(
         client.request(Method::GET, &url).await.unwrap(),
+        &Method::GET,
+        false,
         &[("user-agent".into(), "different-agent".into())],
     );
     assert_eq!(inconsistent.err().unwrap().code, ErrorCode::ContextConflict);
     let builder = client
         .apply_headers(
             client.request(Method::GET, &url).await.unwrap(),
+            &Method::GET,
+            false,
             &[
                 ("X-Repeated".into(), "a".into()),
                 ("X-Repeated".into(), "b".into()),

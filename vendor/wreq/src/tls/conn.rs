@@ -53,6 +53,7 @@ pub struct HandshakeSettings {
     alps_use_new_codepoint: bool,
     key_shares: Option<Cow<'static, [KeyShare]>>,
     random_aes_hw_override: bool,
+    server_padding_request: Option<u16>,
 }
 
 /// A Connector using BoringSSL to support `http` and `https` schemes.
@@ -150,6 +151,11 @@ impl TlsConnector {
         if self.settings.random_aes_hw_override {
             let random = (crate::util::fast_random() & 1) == 0;
             cfg.set_aes_hw_override(random);
+        }
+
+        // Request server padding (BoringSSL server_padding extension)
+        if let Some(num_bytes) = self.settings.server_padding_request {
+            cfg.set_server_padding_request(num_bytes);
         }
 
         // Set ALPN protocols
@@ -338,6 +344,13 @@ impl TlsConnectorBuilder {
             .set_cert_verification(self.cert_verification)
             .set_cert_compressors(opts.certificate_compressors.as_deref())?;
 
+        // The specification distinguishes an empty requested list from omitting the extension.
+        if let Some(ids) = opts.trust_anchors.as_deref() {
+            connector
+                .set_requested_trust_anchors(ids)
+                .map_err(Error::tls)?;
+        }
+
         // Set minimum TLS version
         set_option_inner_try!(min_tls_version, connector, set_min_proto_version);
 
@@ -384,6 +397,14 @@ impl TlsConnectorBuilder {
 
         // Set TLS grease options
         set_option!(opts, grease_enabled, connector, set_grease_enabled);
+
+        // Set TLS signature algorithms grease options
+        set_option!(
+            opts,
+            grease_sigalgs_enabled,
+            connector,
+            set_grease_sigalgs_enabled
+        );
 
         // Set TLS permute extensions options
         set_option!(opts, permute_extensions, connector, set_permute_extensions);
@@ -445,6 +466,7 @@ impl TlsConnectorBuilder {
             enable_ech_grease: opts.enable_ech_grease,
             key_shares: opts.key_shares.clone(),
             random_aes_hw_override: opts.random_aes_hw_override,
+            server_padding_request: opts.server_padding_request,
         };
 
         // If the session cache is disabled, we don't need to set up any callbacks.

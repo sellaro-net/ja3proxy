@@ -281,6 +281,16 @@ impl RequestBuilder {
         self
     }
 
+    /// Override the HTTP/2 `HEADERS` frame priority (dependency, weight, exclusive flag) for
+    /// this request. Requests without an override use the connection default from
+    /// `Http2Options::headers_stream_dependency`. HTTP/1 requests ignore it.
+    pub fn headers_priority(mut self, priority: crate::http2::HeadersPriority) -> RequestBuilder {
+        if let Ok(req) = &mut self.request {
+            req.extensions_mut().insert(priority);
+        }
+        self
+    }
+
     /// Enable or disable client default headers for this request.
     ///
     /// By default, client default headers are included. Set to `false` to skip them.

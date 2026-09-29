@@ -34,6 +34,18 @@
     {
       "files": ["src/conn/proxy/tunnel.rs"],
       "purpose": "Bound untrusted CONNECT response headers to 16384 bytes."
+    },
+    {
+      "api": "TlsOptions::{grease_sigalgs_enabled, trust_anchors, server_padding_request}",
+      "default": "None (extensions omitted, BoringSSL default)",
+      "files": ["src/tls.rs", "src/tls/conn.rs"],
+      "purpose": "ClientHello parity with current Chrome: GREASE value in signature_algorithms (SSL_CTX_set_grease_sigalgs_enabled), trust_anchors extension 0xca34 (SSL_CTX_set1_requested_trust_anchors) and the BoringSSL server_padding extension 0x12e0 (SSL_set_server_padding_request, origin handshakes only). grease_sigalgs_enabled and trust_anchors mirror upstream wreq main (99566ca) field names and semantics; server_padding_request has no upstream equivalent yet. Requires the btls revision pinned in the root Cargo.toml."
+    },
+    {
+      "api": "RequestBuilder::headers_priority(http2::HeadersPriority); re-export wreq::http2::HeadersPriority",
+      "default": "absent (connection default headers_stream_dependency)",
+      "files": ["src/client/request.rs", "src/lib.rs"],
+      "purpose": "Per-request HTTP/2 HEADERS frame dependency/weight/exclusive flag via a request extension consumed by the vendored http2 crate (../http2/transport-provenance.json)."
     }
   ],
   "securityBoundary": "Application guarded resolver validates the entire DNS answer before returning any address. Connector consumes those exact approved addresses for service-owned TCP sockets and numeric CONNECT/SOCKS requests. Origin Host/SNI and certificate verification are unchanged. A remote proxy must obey the numeric target; this service cannot attest a malicious proxy's own remote socket. Remote-DNS proxy schemes remain accepted but intentionally use local guarded resolution.",

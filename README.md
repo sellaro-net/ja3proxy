@@ -14,7 +14,9 @@ responses without running a browser.
 
 ## Features
 
-- Selectable TLS/HTTP/2 profiles with optional header emulation and a fixed user agent.
+- Selectable TLS/HTTP/2 profiles, including current Chrome releases measured against
+  real Chrome, with browser-true header order, optional header emulation and a fixed
+  user agent ([profiles](docs/api.md#profiles)).
 - Direct connections or HTTP, HTTPS and SOCKS proxies, without implicit direct fallback.
 - Reusable connection contexts scoped to the caller and connection identity.
 - Managed first-party cookie jars with explicit export, import and revision checks.

@@ -24,6 +24,7 @@ const token = 'sync-fixture-token-0123456789-0123456789';
 const caps = {
   service: 'ja3proxy', build: 'sync-fixture', profiles: ['chrome_149'],
   headerDescriptors: [{tlsProfile: 'chrome_149', headers: [['user-agent', 'fixture']]}],
+  profileAliases: {},
   framing: {contentType: 'application/vnd.ja3proxy', maxMetadataBytes: 65536, maxDataBytes: 65536, maxUploadFrames: 65536},
   limits: {maxRequestBytes: 16777216, maxResponseBytes: 16777216, maxTimeoutMs: 60000,
     maxControlBytes: 1048576, maxHeaders: 256, maxHeaderBytes: 32768,
