@@ -46,7 +46,7 @@ RUN --mount=type=cache,id=ja3proxy-registry,target=/usr/local/cargo/registry,sha
     && cargo test --locked --all-features \
     && cargo run --release --locked --features schema-export --bin ja3proxy -- --export-contracts contracts --check
 
-FROM debian:trixie-slim@sha256:d7e12182ce18b85b93007c1dedf31f2d29e01ccf3182cc4017c709b6259bc132
+FROM debian:trixie-slim@sha256:a99cfc517144bc59b1978475ec53b46ecabec7e43635402ee5b77cc54cd1b20a
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     curl \
