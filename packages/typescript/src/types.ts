@@ -36,7 +36,19 @@ export interface ExchangeStart {
   timeoutMs: number; maxResponseBytes: number;
 }
 export interface ExchangeOutcome { diagnostics: Ja3Diagnostics; error?: Ja3ProxyTransportError; metadata?: ResponseMetadata }
+/**
+ * Application correlation references, for example trace or journal IDs. They stay in
+ * this process: the SDK never sends them to the service.
+ */
+export type ExchangeReferences = Readonly<Record<string, string>>;
 export interface ExchangeObservation {
+  /**
+   * Snapshotted once when the observer returns this observation and exposed as
+   * `references` on the attempt's results and errors. At most 16 entries; keys match
+   * `/^[A-Za-z][A-Za-z0-9_.-]{0,63}$/`; values are 1-256 characters without control
+   * characters. An invalid set is dropped entirely and never fails the request.
+   */
+  references?: ExchangeReferences;
   run?<T>(operation: () => Promise<T>): Promise<T>;
   requestChunk?(chunk: Uint8Array): void;
   responseHeaders?(metadata: ResponseMetadata): void;
@@ -64,10 +76,14 @@ export type RequestOptions = SessionRequestOptions & { partition: string } & (
 );
 export interface BufferedResponse {
   status: number; headers: Record<string, string[]>; body: Uint8Array; elapsed: number; diagnostics: Ja3Diagnostics;
+  /** Observer-supplied references of this attempt; absent when no observer supplied any. */
+  references?: ExchangeReferences;
   text(): string; json(): unknown; parseJson<T>(decode: (value: unknown) => T | Promise<T>): Promise<T>;
 }
 export interface StreamingResponse {
   metadata: ResponseMetadata; body: ReadableStream<Uint8Array>; completion: Promise<Result<Ja3Diagnostics>>;
+  /** Observer-supplied references of this attempt; absent when no observer supplied any. */
+  references?: ExchangeReferences;
   close(): Promise<void>; [Symbol.asyncDispose](): Promise<void>;
 }
 export type FetchObserver = ExchangeObserver | ((url: URL, init?: RequestInit) => ExchangeObserver | undefined);

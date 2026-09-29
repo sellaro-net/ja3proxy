@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { Admission, BufferBudget, Deadline, Lifetime, timeoutValue } from './concurrency.js';
-import { copyDiagnostics, initialDiagnostics, Ja3ProxyTransportError, localError, safeError } from './errors.js';
+import { copyDiagnostics, initialDiagnostics, Ja3ProxyTransportError, localError, safeError, withReferences } from './errors.js';
 import { createScopedFetch } from './fetch.js';
 import { validateWire } from './generated/validators.js';
 import { Observation } from './observation.js';
@@ -120,6 +120,7 @@ export class Ja3ProxyClient {
       for (const [name, value] of exchange.metadata.headers) (headers[name.toLowerCase()] ??= []).push(value);
       return {
         status: exchange.metadata.status, headers, body, elapsed: completion.value.totalMs, diagnostics: completion.value,
+        ...(exchange.references ? { references: exchange.references } : {}),
         text() { return new TextDecoder().decode(body); },
         json() { return JSON.parse(new TextDecoder().decode(body)) as unknown; },
         async parseJson<T>(decode: (value: unknown) => T | Promise<T>): Promise<T> { return decode(JSON.parse(new TextDecoder().decode(body)) as unknown); },
@@ -128,7 +129,7 @@ export class Ja3ProxyClient {
       this.failStreams.get(exchange)?.(safeError(error, exchange.metadata.diagnostics));
       await exchange.close();
       const completion = await exchange.completion;
-      throw completion.ok ? safeError(error, completion.value) : completion.error;
+      throw withReferences(completion.ok ? safeError(error, completion.value) : completion.error, exchange.references);
     } finally { this.buffers.release(retained); reader.releaseLock(); }
   }
   async stream(options: RequestOptions): Promise<StreamingResponse> {
@@ -165,6 +166,7 @@ export class Ja3ProxyClient {
     const finish = (error?: Ja3ProxyTransportError): void => {
       if (finished) return;
       finished = true;
+      if (error) error = withReferences(error, observation?.references);
       failure = error;
       deadline.signal.removeEventListener('abort', onAbort);
       if (error) {
@@ -282,11 +284,12 @@ export class Ja3ProxyClient {
         }, { highWaterMark: 0 });
         if (finished) { controller?.error(failure); throw failure; }
         const close = async () => { finish(new Ja3ProxyTransportError('CANCELLED', updateLocal(), usedProxy)); await terminal.promise; };
-        const exchange: StreamingResponse = { metadata: copyResponseMetadata(value), body: stream, completion: terminal.promise, close, [Symbol.asyncDispose]: close };
+        const references = observation?.references;
+        const exchange: StreamingResponse = { metadata: copyResponseMetadata(value), body: stream, completion: terminal.promise, ...(references ? { references } : {}), close, [Symbol.asyncDispose]: close };
         this.failStreams.set(exchange, error => finish(new Ja3ProxyTransportError(error.code, updateLocal(), usedProxy, error.kind)));
         return exchange;
       });
-    } catch (error) { const normalized = normalize(error); finish(normalized); throw normalized; }
+    } catch (error) { const normalized = withReferences(normalize(error), observation?.references); finish(normalized); throw normalized; }
   }
   createFetch(options: FetchOptions): ScopedFetch {
     if (!record(options)) throw localError('INVALID_REQUEST', 'invalid_input');

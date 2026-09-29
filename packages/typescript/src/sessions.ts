@@ -1,5 +1,5 @@
 import { Admission, Deadline, Lifetime, timeoutValue } from './concurrency.js';
-import { Ja3ProxyTransportError, localError, safeError } from './errors.js';
+import { Ja3ProxyTransportError, localError, safeError, withReferences } from './errors.js';
 import { fetchResponse, resolveFetchObserver } from './fetch.js';
 import { validateWire } from './generated/validators.js';
 import { contextInfo, cookieRecords, cookieSnapshot, copyContextInfo, headersFrom, nonnegativeInteger, positive, record, resolveProfile } from './protocol.js';
@@ -139,7 +139,7 @@ export async function createSession(host: SessionHost, options: SessionOptions, 
       try {
         if (exchange.metadata.diagnostics.contextId !== current.contextId || (managed && (!nonnegativeInteger(exchange.metadata.cookieRevision) || exchange.metadata.cookieRevision < current.revision))) throw localError('PROTOCOL_ERROR');
         if (exchange.metadata.cookieRevision !== undefined) applyRevision(exchange.metadata.cookieRevision, current.contextId);
-      } catch (error) { await exchange.close(); throw error; }
+      } catch (error) { await exchange.close(); throw withReferences(safeError(error), exchange.references); }
       void exchange.completion.then(result => {
         if (!result.ok) markLost(result.error, current.contextId);
         owned.done();
