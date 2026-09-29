@@ -2,7 +2,7 @@ import { Admission, Deadline, Lifetime } from './concurrency.js';
 import { localError, safeError } from './errors.js';
 import { validatePartition } from './service.js';
 import type { SessionHandle } from './sessions.js';
-import type { ExchangeObservation, ExchangeObserver, ExchangeStart, ExternalSessionOptions, FetchObserver, FetchOptions, Ja3Diagnostics, RequestOptions, Result, ScopedFetch, SessionRequestOptions, StreamingResponse } from './types.js';
+import type { ExchangeObservation, ExchangeObserver, ExchangeStart, ExternalSessionOptions, FetchObserver, FetchOptions, Ja3Diagnostics, Ja3HeaderOrder, RequestOptions, Result, ScopedFetch, SessionRequestOptions, StreamingResponse } from './types.js';
 
 const completions = new WeakMap<Response, Promise<Result<Ja3Diagnostics>>>();
 export function getResponseCompletion(response: Response): Promise<Result<Ja3Diagnostics>> | undefined { return completions.get(response); }
@@ -28,7 +28,7 @@ export function resolveFetchObserver(observer: FetchObserver | undefined, init?:
     return result;
   };
 }
-interface ResponseOptions { timeoutMs?: number; maxResponseBytes?: number; attempt?: number; observer?: FetchObserver | undefined }
+interface ResponseOptions { timeoutMs?: number; maxResponseBytes?: number; attempt?: number; headerOrder?: Ja3HeaderOrder | undefined; observer?: FetchObserver | undefined }
 export async function fetchResponse(input: string | URL | Request, init: RequestInit | undefined, execute: (request: SessionRequestOptions) => Promise<StreamingResponse>, options: ResponseOptions): Promise<Response> {
   let request: Request;
   try {
@@ -37,7 +37,7 @@ export async function fetchResponse(input: string | URL | Request, init: Request
   } catch { throw localError('INVALID_REQUEST', 'invalid_input'); }
   let exchange: StreamingResponse | undefined;
   try {
-    exchange = await execute({ url: request.url, method: request.method, headers: request.headers, body: request.body, signal: request.signal, ...(options.timeoutMs === undefined ? {} : { timeoutMs: options.timeoutMs }), ...(options.maxResponseBytes === undefined ? {} : { maxResponseBytes: options.maxResponseBytes }), ...(options.attempt === undefined ? {} : { attempt: options.attempt }), ...(options.observer ? { observer: resolveFetchObserver(options.observer, init) } : {}) });
+    exchange = await execute({ url: request.url, method: request.method, headers: request.headers, body: request.body, signal: request.signal, ...(options.timeoutMs === undefined ? {} : { timeoutMs: options.timeoutMs }), ...(options.maxResponseBytes === undefined ? {} : { maxResponseBytes: options.maxResponseBytes }), ...(options.attempt === undefined ? {} : { attempt: options.attempt }), ...(options.headerOrder === undefined ? {} : { headerOrder: options.headerOrder }), ...(options.observer ? { observer: resolveFetchObserver(options.observer, init) } : {}) });
     const noBody = request.method === 'HEAD' || [204, 205, 304].includes(exchange.metadata.status);
     if (noBody) {
       const reader = exchange.body.getReader();
@@ -69,6 +69,7 @@ export interface FetchHost {
 export function createScopedFetch(host: FetchHost, options: FetchOptions, onClose: () => void): ScopedFetch {
   validatePartition(options.partition);
   if (options.context !== undefined && options.context !== 'stateless' && options.context !== 'session') throw localError('INVALID_REQUEST', 'invalid_input');
+  if (options.headerOrder !== undefined && options.headerOrder !== 'caller' && options.headerOrder !== 'browser') throw localError('INVALID_REQUEST', 'invalid_input');
   const settings = { ...options, timeoutMs: options.timeoutMs ?? host.defaultTimeoutMs, maxResponseBytes: options.maxResponseBytes ?? host.maxResponseBytes, connection: structuredClone(options.connection) };
   const lifetime = new Lifetime();
   const admission = new Admission({ maxConcurrent: 16, maxConcurrentPerPartition: 16, maxQueued: 128, maxQueuedPerPartition: 128 });

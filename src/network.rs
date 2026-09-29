@@ -2,9 +2,9 @@
 
 pub use crate::validation::validate_origin;
 use crate::{
-    emulation::{parse_tls_profile, profile_emulation},
+    emulation::{RequestShaping, TlsProfile, parse_tls_profile, profile_emulation},
     error::{ErrorCode, TransportError},
-    models::{ConnectionSpec, Egress},
+    models::{ConnectionSpec, Egress, HeaderOrder},
     validation::{blocked_hostname, parse_target, public_ip},
 };
 use std::{
@@ -84,7 +84,7 @@ impl Resolve for GuardedResolver {
             policy.check_addresses(&addresses)?;
             ensure_open(&closed)?;
             // These exact addresses go into TCP connect / numeric proxy negotiation.
-            // The vendored opt-in connector never resolves them again elsewhere.
+            // The resolver-enforced egress connector never resolves them again elsewhere.
             Ok(Box::new(addresses.into_iter()) as Addrs)
         })
     }
@@ -103,6 +103,10 @@ pub struct NetworkClient {
     policy: Arc<NetworkPolicy>,
     closed: Arc<AtomicBool>,
     fixed_user_agent: Option<HeaderValue>,
+    profile: TlsProfile,
+    shaping: RequestShaping,
+    /// Client default headers every request inherits (emulated headers, fixed UA).
+    default_headers: HeaderMap,
 }
 
 impl NetworkClient {
@@ -137,8 +141,13 @@ impl NetworkClient {
                     .map_err(|_| TransportError::from_code(ErrorCode::InvalidRequest))
             })
             .transpose()?;
+        let emulation = profile_emulation(profile, spec.identity.emulate_headers);
+        let mut default_headers = emulation.headers.clone();
+        if let Some(user_agent) = &fixed_user_agent {
+            default_headers.insert(USER_AGENT, user_agent.clone());
+        }
         let mut builder = Client::builder()
-            .emulation(profile_emulation(profile, spec.identity.emulate_headers))
+            .emulation(emulation)
             .auto_accept_encoding(spec.identity.emulate_headers)
             .no_proxy()
             .dns_resolver(resolver)
@@ -177,7 +186,15 @@ impl NetworkClient {
             policy,
             closed,
             fixed_user_agent,
+            profile,
+            shaping: profile.shaping(),
+            default_headers,
         })
+    }
+
+    /// Concrete profile this client emulates (aliases resolved).
+    pub fn profile(&self) -> TlsProfile {
+        self.profile
     }
 
     pub async fn request(
@@ -204,10 +221,16 @@ impl NetworkClient {
 
     /// Apply repeated caller headers while protecting transport framing and fixed identity.
     /// Core additionally owns managed Cookie selection; the network never stores cookies.
+    /// Headers keep the caller's order unless `header_order` is `browser`, which makes Chrome
+    /// profiles send them in Chrome's order for the request kind. Profiles that opt in send the
+    /// HTTP/2 HEADERS weight of the effective `priority` urgency in either mode.
     pub fn apply_headers(
         &self,
         builder: RequestBuilder,
+        method: &Method,
+        has_body: bool,
         headers: &[(String, String)],
+        header_order: HeaderOrder,
     ) -> Result<RequestBuilder, TransportError> {
         ensure_open(&self.closed)?;
         let mut map = HeaderMap::with_capacity(headers.len());
@@ -236,7 +259,15 @@ impl NetworkClient {
             }
             map.append(name, value);
         }
-        Ok(builder.headers(map))
+        Ok(shape_request(
+            builder,
+            self.shaping,
+            &self.default_headers,
+            method,
+            has_body,
+            map,
+            header_order,
+        ))
     }
 
     /// Stop future use and release idle pool/credentials. Core cancels active request
@@ -258,6 +289,27 @@ impl Drop for NetworkClient {
     fn drop(&mut self) {
         self.close();
     }
+}
+
+/// Attach validated caller headers plus the profile's wire order and HEADERS priority.
+fn shape_request(
+    builder: RequestBuilder,
+    shaping: RequestShaping,
+    default_headers: &HeaderMap,
+    method: &Method,
+    has_body: bool,
+    headers: HeaderMap,
+    header_order: HeaderOrder,
+) -> RequestBuilder {
+    let shaped = shaping.shape(method, has_body, &headers, default_headers, header_order);
+    let mut builder = builder.headers(headers);
+    if let Some(priority) = shaped.headers_priority() {
+        builder = builder.headers_priority(priority);
+    }
+    if let Some(order) = shaped.orig_headers {
+        builder = builder.orig_headers(order);
+    }
+    builder
 }
 
 fn forbidden_header(name: &str) -> bool {
@@ -322,5 +374,7 @@ fn parse_proxy(value: &str) -> Result<url::Url, TransportError> {
     Ok(proxy)
 }
 
+#[cfg(test)]
+mod golden;
 #[cfg(test)]
 mod tests;

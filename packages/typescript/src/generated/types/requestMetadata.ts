@@ -12,6 +12,13 @@ export type Egress =
       mode: 'proxy';
       url: string;
     };
+/**
+ * Header wire order of one request.
+ *
+ * This interface was referenced by `RequestMetadata`'s JSON-Schema
+ * via the `definition` "HeaderOrder".
+ */
+export type HeaderOrder = 'caller' | 'browser';
 
 export interface RequestMetadata {
   attempt: number;
@@ -19,6 +26,11 @@ export interface RequestMetadata {
   connection?: ConnectionSpec | null;
   contextId?: string | null;
   hasBody: boolean;
+  /**
+   * Wire order of the request headers: `caller` (default) sends them in the given order,
+   * `browser` applies the Chrome profile's order for the request kind.
+   */
+  headerOrder?: HeaderOrder;
   headers: [string, string][];
   maxResponseBytes: number;
   method: string;

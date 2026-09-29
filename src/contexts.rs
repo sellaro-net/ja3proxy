@@ -160,6 +160,8 @@ impl ContextStore {
             Reservation { store: self, owner }
         };
         let client = NetworkClient::new(self.policy.clone(), spec.connection.clone()).await?;
+        // Context metadata and diagnostics report the concrete profile, never an alias.
+        spec.connection.identity.tls_profile = client.profile().name();
         // Only NetworkClient retains credentials, in its explicitly closeable resource owner.
         if let Egress::Proxy { url } = &mut spec.connection.egress {
             let mut proxy =

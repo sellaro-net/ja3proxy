@@ -244,7 +244,7 @@ dependencies = [
 [[package]]
 name = "btls"
 version = "0.5.6"
-source = "git+https://github.com/0x676e67/btls?rev=129887582a538b8f4dcf371d15c953335312ca37#129887582a538b8f4dcf371d15c953335312ca37"
+source = "git+https://github.com/0x676e67/btls?rev=1e980877343872b671d18a185395e31c10cc51d5#1e980877343872b671d18a185395e31c10cc51d5"
 dependencies = [
  "bitflags",
  "btls-sys",
@@ -256,7 +256,7 @@ dependencies = [
 [[package]]
 name = "btls-sys"
 version = "0.5.6"
-source = "git+https://github.com/0x676e67/btls?rev=129887582a538b8f4dcf371d15c953335312ca37#129887582a538b8f4dcf371d15c953335312ca37"
+source = "git+https://github.com/0x676e67/btls?rev=1e980877343872b671d18a185395e31c10cc51d5#1e980877343872b671d18a185395e31c10cc51d5"
 dependencies = [
  "bindgen",
  "cmake",
@@ -658,8 +658,7 @@ dependencies = [
 [[package]]
 name = "http2"
 version = "0.5.20"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "92d3114be2f413b2e491e686b93a28cda30c355cffc8d091a57f8be4b1342896"
+source = "git+https://github.com/sellaro-net/http2?rev=bdb2c60cd9b4125c28913191b6f758d00e5f136c#bdb2c60cd9b4125c28913191b6f758d00e5f136c"
 dependencies = [
  "atomic-waker",
  "bytes",
@@ -869,6 +868,7 @@ dependencies = [
  "cookie_store",
  "flate2",
  "futures-util",
+ "http2",
  "parking_lot",
  "percent-encoding",
  "psl",
@@ -1658,7 +1658,7 @@ dependencies = [
 [[package]]
 name = "tokio-btls"
 version = "0.5.6"
-source = "git+https://github.com/0x676e67/btls?rev=129887582a538b8f4dcf371d15c953335312ca37#129887582a538b8f4dcf371d15c953335312ca37"
+source = "git+https://github.com/0x676e67/btls?rev=1e980877343872b671d18a185395e31c10cc51d5#1e980877343872b671d18a185395e31c10cc51d5"
 dependencies = [
  "btls",
  "tokio",
@@ -1720,9 +1720,9 @@ dependencies = [
 
 [[package]]
 name = "tower-http"
-version = "0.6.11"
+version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4cfcf7e2740e6fc6d4d688b4ef00650406bb94adf4731e43c096c3a19fe40840"
+checksum = "08a05a66a4fdd61cbbe0a1d755ffe0ca6aba159dd4820936a0ff8a8278245b9c"
 dependencies = [
  "async-compression",
  "bitflags",
@@ -1731,6 +1731,7 @@ dependencies = [
  "http",
  "http-body",
  "http-body-util",
+ "percent-encoding",
  "pin-project-lite",
  "tokio",
  "tokio-util",
@@ -2073,6 +2074,7 @@ checksum = "589f6da84c646204747d1270a2a5661ea66ed1cced2631d546fdfb155959f9ec"
 [[package]]
 name = "wreq"
 version = "0.16.1"
+source = "git+https://github.com/sellaro-net/wreq?rev=1aa722637ab7c53ddd7b80d0f5bd8df3d889cc69#1aa722637ab7c53ddd7b80d0f5bd8df3d889cc69"
 dependencies = [
  "btls",
  "btls-sys",

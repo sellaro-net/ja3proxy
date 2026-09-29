@@ -1,7 +1,7 @@
 import { Admission, Deadline, Lifetime, MAX_TIMEOUT_MS, timeoutValue } from './concurrency.js';
 import { initialDiagnostics, Ja3ProxyTransportError, localError } from './errors.js';
 import { validateWire } from './generated/validators.js';
-import { capabilities, CONTROL_LIMIT, copyCapabilities, diagnostics, errorCode, jsonBytes, nonnegativeInteger, opaque, parseJson, record, validateDiagnosticEnvelope } from './protocol.js';
+import { capabilities, CONTROL_LIMIT, copyCapabilities, diagnostics, errorCode, jsonBytes, nonnegativeInteger, opaque, parseJson, record, resolveProfile, validateDiagnosticEnvelope } from './protocol.js';
 import type { Capabilities, ClientOptions, ConnectionSpec, Ja3Diagnostics } from './types.js';
 
 export class Service {
@@ -137,7 +137,7 @@ export function validatePartition(partition: string): void { if (!opaque(partiti
 export function validateConnection(caps: Capabilities, spec: ConnectionSpec): void {
   if (!record(spec) || !record(spec.identity) || !record(spec.egress)) throw localError('INVALID_REQUEST', 'invalid_input');
   const diag = initialDiagnostics('control', 0, spec.identity.tlsProfile);
-  if (typeof spec.identity.tlsProfile !== 'string' || !caps.profiles.includes(spec.identity.tlsProfile)) throw new Ja3ProxyTransportError('INVALID_PROFILE', diag, spec.egress.mode === 'proxy');
+  if (typeof spec.identity.tlsProfile !== 'string' || resolveProfile(caps, spec.identity.tlsProfile) === undefined) throw new Ja3ProxyTransportError('INVALID_PROFILE', diag, spec.egress.mode === 'proxy');
   if (typeof spec.identity.emulateHeaders !== 'boolean' || (spec.identity.userAgent !== undefined && (typeof spec.identity.userAgent !== 'string' || /[\r\n\0]/.test(spec.identity.userAgent)))) throw new Ja3ProxyTransportError('INVALID_REQUEST', diag);
   let mode = 'direct';
   if (spec.egress.mode === 'proxy') {

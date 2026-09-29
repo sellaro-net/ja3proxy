@@ -4,7 +4,10 @@ use crate::{
     auth::{self, PRINCIPAL},
     config::Config,
     contexts::{Context, ContextLimits, ContextStore, CookieCommand},
-    emulation::{available_profiles, header_descriptors, parse_tls_profile},
+    emulation::{
+        available_profiles, canonical_profile_name, header_descriptors, parse_tls_profile,
+        profile_aliases,
+    },
     error::{ErrorCode, TransportError, from_wreq},
     models::{
         Capabilities, CapabilityLimits, CapabilityModes, CookieMode, CreateContext, Delivery,
@@ -86,6 +89,7 @@ pub(crate) fn capabilities(config: &Config) -> Capabilities {
         build: env!("CARGO_PKG_VERSION").to_owned(),
         profiles: available_profiles(),
         header_descriptors: header_descriptors(),
+        profile_aliases: profile_aliases(),
         framing: FramingCapabilities {
             content_type: protocol::CONTENT_TYPE.to_owned(),
             max_metadata_bytes: protocol::MAX_METADATA_BYTES,
@@ -222,10 +226,11 @@ pub async fn request_handler(
         total_ms: started.elapsed().as_millis() as u64,
         request_bytes: 0,
         response_bytes: 0,
+        // Report the concrete profile; aliases are resolved (validated above).
         tls_profile: metadata
             .connection
             .as_ref()
-            .map(|connection| connection.identity.tls_profile.clone())
+            .and_then(|connection| canonical_profile_name(&connection.identity.tls_profile).ok())
             .unwrap_or_default(),
         client_reused: None,
         context_id: metadata.context_id.clone(),
@@ -410,8 +415,17 @@ async fn transfer(
     };
     let method = wreq::Method::from_bytes(metadata.method.as_bytes())
         .map_err(|_| TransportError::from_code(ErrorCode::InvalidRequest))?;
-    let builder = owner.client().request(method, &metadata.url).await?;
-    let mut builder = owner.client().apply_headers(builder, &metadata.headers)?;
+    let builder = owner
+        .client()
+        .request(method.clone(), &metadata.url)
+        .await?;
+    let mut builder = owner.client().apply_headers(
+        builder,
+        &method,
+        metadata.has_body,
+        &metadata.headers,
+        metadata.header_order,
+    )?;
     if let Some(access) = &cookie_access {
         if let Some(cookies) = access.header() {
             builder = builder.header("cookie", cookies);

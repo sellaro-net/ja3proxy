@@ -74,6 +74,21 @@
           "type": "object"
         }
       ]
+    },
+    "HeaderOrder": {
+      "description": "Header wire order of one request.",
+      "oneOf": [
+        {
+          "const": "caller",
+          "description": "Headers go on the wire in the caller's order.",
+          "type": "string"
+        },
+        {
+          "const": "browser",
+          "description": "Chrome profiles order headers like Chrome for the request kind; other profiles keep the\ncaller's order.",
+          "type": "string"
+        }
+      ]
     }
   },
   "properties": {
@@ -111,6 +126,14 @@
     },
     "hasBody": {
       "type": "boolean"
+    },
+    "headerOrder": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/HeaderOrder"
+        }
+      ],
+      "description": "Wire order of the request headers: `caller` (default) sends them in the given order,\n`browser` applies the Chrome profile's order for the request kind."
     },
     "headers": {
       "items": {

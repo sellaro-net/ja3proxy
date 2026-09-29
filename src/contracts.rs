@@ -9,7 +9,7 @@ use crate::{
     handlers,
     models::{
         BrowserIdentity, Capabilities, ConnectionSpec, ContextInfo, CookieMode, CreateContext,
-        Delivery, Diagnostics, Egress, Phase, RequestMetadata, ResponseMetadata,
+        Delivery, Diagnostics, Egress, HeaderOrder, Phase, RequestMetadata, ResponseMetadata,
     },
     registry::{RequestState, RequestStatus},
 };
@@ -155,6 +155,7 @@ fn fixtures(contracts: &[Contract]) -> Vec<Fixture> {
         url: "https://example.com/".into(),
         method: "GET".into(),
         headers: vec![],
+        header_order: HeaderOrder::Caller,
         has_body: false,
         body_length: Some(0),
         timeout_ms: 5_000,
@@ -402,6 +403,24 @@ fn fixtures(contracts: &[Contract]) -> Vec<Fixture> {
             "Wire discriminants, numeric widths, and tuple arity must agree with serde.",
         ));
     }
+    // The optional request header order is a closed set; unknown values are rejected.
+    for (suffix, value, valid) in [
+        ("browser", json!("browser"), true),
+        ("caller", json!("caller"), true),
+        ("unknown", json!("chrome"), false),
+    ] {
+        let mut object = baseline("requestMetadata");
+        object["headerOrder"] = value;
+        output.push(fixture(
+            contracts,
+            format!("requestMetadata-header-order-{suffix}"),
+            "requestMetadata",
+            object,
+            valid,
+            valid,
+            "headerOrder accepts exactly caller and browser.",
+        ));
+    }
     let mut waiting = diagnostics();
     waiting.phase = Phase::Queued;
     waiting.delivery = Delivery::NotStarted;
@@ -627,6 +646,7 @@ fn request_semantics() -> Vec<RequestSemanticFixture> {
         url: "https://example.com/".into(),
         method: "POST".into(),
         headers: vec![],
+        header_order: HeaderOrder::Caller,
         has_body: false,
         body_length: Some(0),
         timeout_ms: 5_000,
@@ -638,6 +658,9 @@ fn request_semantics() -> Vec<RequestSemanticFixture> {
     context.connection = None;
     context.context_id = Some("semantic-context".into());
     cases.push(("context-bodyless", context, true, "encode"));
+    let mut browser_order = baseline();
+    browser_order.header_order = HeaderOrder::Browser;
+    cases.push(("browser-header-order", browser_order, true, "encode"));
     let mut both = baseline();
     both.context_id = Some("semantic-context".into());
     cases.push(("both-connection-and-context", both, false, "reject"));

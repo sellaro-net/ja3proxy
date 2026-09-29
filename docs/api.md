@@ -41,6 +41,8 @@ received. This is local structured logging, not a telemetry exporter.
 
 - `build`: the compiled package release identifier.
 - `profiles` and `headerDescriptors`: supported profile names and emulated headers.
+- `profileAliases`: alias name → the concrete profile it resolves to
+  (see [Profiles](#profiles)).
 - `framing`: `contentType`, `maxMetadataBytes`, `maxDataBytes`, `maxUploadFrames`.
 - `limits`: raw upload/decoded response sizes, timeouts, headers, concurrency,
   queues, envelope readers, contexts, cookies and request-registry retention.
@@ -60,7 +62,7 @@ The first request frame contains this JSON shape:
   "partition": "demo",
   "connection": {
     "egress": { "mode": "direct" },
-    "identity": { "tlsProfile": "chrome_149", "emulateHeaders": true }
+    "identity": { "tlsProfile": "chrome_155", "emulateHeaders": true }
   },
   "url": "https://example.com/",
   "method": "GET",
@@ -80,6 +82,7 @@ The first request frame contains this JSON shape:
 | `url` | HTTP(S) destination, subject to address and context-origin policies. |
 | `method` | HTTP method. Redirects are returned, not followed. |
 | `headers` | Required array of `[name, value]` pairs. Repeated headers are supported. |
+| `headerOrder` | Optional `"caller"` (default) or `"browser"`; see [header order](#header-order). Other values are rejected with `INVALID_REQUEST`. |
 | `hasBody` | Required boolean. `false` preserves a genuinely bodyless upstream request. |
 | `bodyLength` | Optional exact raw byte count; enforced when supplied. |
 | `timeoutMs` | Positive total budget including admission, upload and response, within service limits. |
@@ -100,6 +103,68 @@ credentials use URL userinfo; SOCKS4 supports a user ID, not a password.
 `userAgent`. Discover profiles through `/capabilities`. With header emulation
 disabled, caller headers and protocol-required generated fields remain; response
 decompression is still active. A request cannot contradict a context's fixed UA.
+
+### Profiles
+
+A profile fixes the TLS ClientHello, the HTTP/2 connection settings and, with
+`emulateHeaders: true`, the default request headers.
+
+- `chrome_100` … `chrome_149`, `edge_*`, `opera_*`, `firefox_*`, `safari_*` and
+  `okhttp_*` come from the pinned `wreq-util` registry.
+- `chrome_150`: `chrome_149` plus the ML-DSA signature algorithms
+  (`0x0904`–`0x0906`).
+- `chrome_154`, `chrome_155`: `chrome_150` plus a GREASE signature algorithm,
+  the `trust_anchors` extension (`0xca34`) with Chrome's Trust Anchor IDs and
+  the `server_padding` extension (`0x12e0`). Both produce the network
+  fingerprint measured on Chrome 154/155: JA4
+  `t13d1518h2_8daaf6152771_4980c97edce0` (fresh handshake) and HTTP/2
+  `1:65536;2:0;4:6291456;6:262144|15663105|0|m,a,s,p`. Emulated headers are a
+  Windows Chrome of that version (`sec-ch-ua` derived from the major version;
+  `chrome_155` adds `image/jxl` to the navigation `accept`).
+
+`chrome_stable` is an alias for the newest concrete Chrome profile, currently
+`chrome_155`; `profileAliases` in `/capabilities` shows the mapping. Aliases are
+accepted wherever a profile is; diagnostics and context metadata report the
+concrete profile. The alias moves with new releases, so pin a concrete profile
+when the identity must stay fixed (for example, state bound to a user agent).
+
+A scheduled workflow (`.github/workflows/chrome-freshness.yml`) compares the
+newest `chrome_<N>` profile with Chrome stable weekly and keeps one issue open
+while the gap exceeds two major versions.
+
+#### Header order
+
+`headerOrder` selects the wire order of the request headers, for connection and
+context requests alike:
+
+- `"caller"` (default, also when the field is absent): headers are sent in the
+  order of `headers`, byte for byte, as in earlier releases.
+- `"browser"`: `chrome_*` profiles (with or without header emulation) send the
+  headers in Chrome's order for the request kind, independent of the order the
+  caller supplies them. Non-Chrome profiles ignore the setting and keep the
+  caller's order.
+
+Chrome order templates used by `"browser"`:
+
+| Kind | Selected when | Order (HTTP/2, after pseudo headers) |
+|------|---------------|--------------------------------------|
+| Navigation | `sec-fetch-mode: navigate`; else `sec-fetch-dest` `document`/`iframe`/`frame`/`fencedframe`; else `upgrade-insecure-requests` or `sec-fetch-user` present; else a GET/HEAD without body | `content-length`, `cache-control`, `sec-ch-ua`, `sec-ch-ua-mobile`, `sec-ch-ua-platform`, `upgrade-insecure-requests`, `content-type`, `user-agent`, *other*, `origin`, `accept`, `sec-fetch-site`, `sec-fetch-mode`, `sec-fetch-user`, `sec-fetch-dest`, `referer`, `accept-encoding`, `accept-language`, `cookie`, `priority` |
+| Fetch | any other request without body (not POST/PUT/PATCH) | `sec-ch-ua-platform`, `sec-ch-ua`, `user-agent`, *other*, `sec-ch-ua-mobile`, `accept`, `origin`, `sec-fetch-site`, `sec-fetch-mode`, `sec-fetch-dest`, `referer`, `accept-encoding`, `accept-language`, `cookie`, `priority` |
+| Fetch with body | any other request with a body, POST, PUT or PATCH | `content-length`, `sec-ch-ua-platform`, `sec-ch-ua`, `content-type`, *other*, `sec-ch-ua-mobile`, `user-agent`, `accept`, `origin`, `sec-fetch-site`, `sec-fetch-mode`, `sec-fetch-dest`, `referer`, `accept-encoding`, `accept-language`, `cookie`, `priority` |
+
+*other* are headers not named in the row, in caller order, at the position
+where Chrome places headers set by a page or extension. The request kind and
+urgency use the caller's value, falling back to the emulated default. Values,
+repeated headers and cookie handling are unchanged. HTTP/1 requests use the same
+order behind `host`.
+
+#### HTTP/2 priority
+
+For `chrome_154` and `chrome_155` the HEADERS frame weight follows the urgency
+of the effective `priority` header like Chrome, with either `headerOrder`:
+`u=0` → 256, `u=1` → 220, `u=2` → 183, `u=3` or no `u` → 147, `u=4` → 110,
+`u=5` → 74, `u=6` → 37, `u=7` → 1. Without a `priority` header the connection
+default (220) applies. Other profiles always use their connection default.
 
 ## Wire format
 
@@ -154,7 +219,7 @@ Create a context with `POST /contexts`:
   "partition": "demo",
   "connection": {
     "egress": { "mode": "direct" },
-    "identity": { "tlsProfile": "chrome_149", "emulateHeaders": true }
+    "identity": { "tlsProfile": "chrome_155", "emulateHeaders": true }
   },
   "cookieMode": "managed",
   "allowedOrigins": ["https://example.com"],

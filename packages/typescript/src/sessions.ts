@@ -2,7 +2,7 @@ import { Admission, Deadline, Lifetime, timeoutValue } from './concurrency.js';
 import { Ja3ProxyTransportError, localError, safeError } from './errors.js';
 import { fetchResponse, resolveFetchObserver } from './fetch.js';
 import { validateWire } from './generated/validators.js';
-import { contextInfo, cookieRecords, cookieSnapshot, copyContextInfo, headersFrom, nonnegativeInteger, positive, record } from './protocol.js';
+import { contextInfo, cookieRecords, cookieSnapshot, copyContextInfo, headersFrom, nonnegativeInteger, positive, record, resolveProfile } from './protocol.js';
 import { Service, validateConnection, validatePartition } from './service.js';
 import type { BufferedResponse, CloseOptions, ConnectionSpec, ContextInfo, CookieRecord, CookieSnapshot, ExternalSession, Ja3BrowserIdentity, ManagedSession, RebindOutcome, RequestOptions, ScopedFetch, SessionOptions, SessionRequestOptions, StreamingResponse } from './types.js';
 
@@ -38,7 +38,7 @@ async function openContext(service: Service, options: SessionOptions, signal?: A
   const request = { partition: options.partition, connection: options.connection, cookieMode: options.cookieMode, allowedOrigins: options.allowedOrigins ?? [], ...(options.ttlMs === undefined ? {} : { ttlMs: options.ttlMs }) };
   if (!validateWire('createContext', request)) throw localError('INVALID_REQUEST', 'invalid_input');
   const value = await service.control('contexts', 'POST', request, signal);
-  if (!contextInfo(value) || value.partition !== options.partition || value.cookieMode !== options.cookieMode || value.identity.tlsProfile !== options.connection.identity.tlsProfile || value.identity.emulateHeaders !== options.connection.identity.emulateHeaders || value.identity.userAgent !== options.connection.identity.userAgent) throw localError('PROTOCOL_ERROR');
+  if (!contextInfo(value) || value.partition !== options.partition || value.cookieMode !== options.cookieMode || value.identity.tlsProfile !== resolveProfile(caps, options.connection.identity.tlsProfile) || value.identity.emulateHeaders !== options.connection.identity.emulateHeaders || value.identity.userAgent !== options.connection.identity.userAgent) throw localError('PROTOCOL_ERROR');
   return copyContextInfo(value);
 }
 interface CookieReply { revision: number; cookies?: CookieRecord[]; snapshot?: CookieSnapshot }

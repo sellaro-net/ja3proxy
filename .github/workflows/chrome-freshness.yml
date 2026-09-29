@@ -1,0 +1,77 @@
+name: Chrome profile freshness
+
+# Compares the newest concrete chrome_<N> profile with the current Chrome stable
+# release and keeps one open issue while the gap exceeds two major versions.
+on:
+  schedule:
+    - cron: "23 5 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: chrome-freshness
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  freshness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Compare profiles with Chrome stable
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MAX_LAG: "2"
+          MARKER: "<!-- chrome-profile-freshness -->"
+          VERSION_URL: https://versionhistory.googleapis.com/v1/chrome/platforms/win/channels/stable/versions?pageSize=1
+        run: |
+          set -euo pipefail
+          stable=$(curl -fsS --retry 3 --retry-all-errors --max-time 30 "$VERSION_URL" \
+            | jq -er '.versions[0].version')
+          stable_major=${stable%%.*}
+          # The generated capabilities fixture lists every profile the service offers.
+          newest=$(jq -er '[.fixtures[]
+              | select(.contract == "capabilities" and .valid == true)
+              | .value.profiles[]
+              | select(test("^chrome_[0-9]+$"))
+              | ltrimstr("chrome_") | tonumber] | max' contracts/fixtures/wire.json)
+          lag=$((stable_major - newest))
+          echo "Chrome stable ${stable} (major ${stable_major}); newest profile chrome_${newest}; lag ${lag}."
+          if [ "$lag" -le "$MAX_LAG" ]; then
+            exit 0
+          fi
+
+          title="Chrome profiles lag Chrome stable by ${lag} major versions"
+          body=$(cat <<EOF
+          ${MARKER}
+          The newest concrete Chrome profile is \`chrome_${newest}\`; Chrome stable on Windows is \`${stable}\` (major ${stable_major}), a gap of ${lag} major versions (threshold: more than ${MAX_LAG}).
+
+          To add \`chrome_${stable_major}\`:
+          1. Capture a navigation and a fetch of that Chrome release against a TLS/HTTP2 echo.
+          2. Compare JA4, extensions, signature algorithms, HTTP/2 settings, header order and HEADERS weights with \`src/emulation/golden/chrome_155.json\`.
+          3. Add the profile in \`src/emulation.rs\` (and a new golden fixture if the fingerprint changed), move the \`chrome_stable\` alias, regenerate the contracts.
+
+          Source: ${VERSION_URL}
+          This issue is maintained by the \`${GITHUB_WORKFLOW}\` workflow.
+          EOF
+          )
+
+          existing=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open \
+            --author "app/github-actions" --limit 100 --json number,body \
+            | jq -r --arg marker "$MARKER" '[.[] | select(.body | contains($marker)) | .number] | first // empty')
+          if [ -n "$existing" ]; then
+            gh issue edit "$existing" --repo "$GITHUB_REPOSITORY" --title "$title" --body "$body"
+            echo "Updated issue #${existing}."
+          else
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body "$body"
+          fi

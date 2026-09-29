@@ -115,8 +115,8 @@ Rollbacks must preserve agreement between the application and service.
 
 ## Maintenance
 
-The Rust toolchain and dependency lockfile are pinned. The patched `wreq` source
-has an explicit [provenance manifest](../vendor/wreq/transport-provenance.json).
+The Rust toolchain and dependency lockfile are pinned. The patched `wreq` fork and
+its patch list are documented in [dependencies](dependencies.md).
 Review connector behavior, DNS/address policy, retries and cancellation when
 refreshing it; replacing the patch with an unreviewed upstream dependency changes
 the security and delivery boundary.

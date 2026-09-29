@@ -54,11 +54,12 @@ bodyless request. Files are streamed in bounded chunks, not buffered as base64.
 
 ```sh
 python examples/request.py https://example.com/ \
-  --partition demo --direct --profile chrome_149 \
+  --partition demo --direct --profile chrome_155 \
   --timeout 15 --max-response-bytes 1048576 --output page.html
 ```
 
-The profile must appear in `/capabilities`. `--no-emulate-headers` disables
+The profile must appear in `/capabilities` (`profiles` or `profileAliases`; see
+[Profiles](api.md#profiles)). `--no-emulate-headers` disables
 profile-generated request headers; `-H` adds caller headers. `--user-agent`
 sets a fixed UA. These are connection-identity choices, not a guarantee that a
 target will accept the request. Never modify the identity of an existing context.
@@ -95,7 +96,7 @@ CONTEXT_ID=$(curl --fail --silent --show-error "$JA3_PROXY_URL/contexts" \
     "partition":"demo",
     "connection":{
       "egress":{"mode":"direct"},
-      "identity":{"tlsProfile":"chrome_149","emulateHeaders":true}
+      "identity":{"tlsProfile":"chrome_155","emulateHeaders":true}
     },
     "cookieMode":"external",
     "allowedOrigins":[],
@@ -136,7 +137,7 @@ CONTEXT_ID=$(curl --fail --silent --show-error "$JA3_PROXY_URL/contexts" \
     "partition":"demo",
     "connection":{
       "egress":{"mode":"direct"},
-      "identity":{"tlsProfile":"chrome_149","emulateHeaders":true}
+      "identity":{"tlsProfile":"chrome_155","emulateHeaders":true}
     },
     "cookieMode":"managed",
     "allowedOrigins":["https://example.com"],

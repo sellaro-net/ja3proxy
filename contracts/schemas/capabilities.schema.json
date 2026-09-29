@@ -265,6 +265,13 @@
     "modes": {
       "$ref": "#/definitions/CapabilityModes"
     },
+    "profileAliases": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "Alias name → concrete profile it currently resolves to. Aliases are accepted\nwherever a profile name is; responses report the concrete profile.",
+      "type": "object"
+    },
     "profiles": {
       "items": {
         "type": "string"
@@ -280,6 +287,7 @@
     "build",
     "profiles",
     "headerDescriptors",
+    "profileAliases",
     "framing",
     "limits",
     "modes"

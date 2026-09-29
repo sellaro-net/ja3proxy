@@ -79,6 +79,7 @@ export function capabilities(value: unknown): value is Capabilities {
   return raw.service === 'ja3proxy' && raw.build.length > 0 && raw.profiles.length > 0 &&
     raw.profiles.every(profile => /^[a-z0-9_.]{1,64}$/.test(profile)) &&
     raw.headerDescriptors.every(item => raw.profiles.includes(item.tlsProfile) && headerPairs(item.headers)) &&
+    Object.entries(raw.profileAliases).every(([alias, target]) => /^[a-z0-9_.]{1,64}$/.test(alias) && !raw.profiles.includes(alias) && raw.profiles.includes(target)) &&
     raw.framing.contentType === CONTENT_TYPE && positive(raw.framing.maxMetadataBytes) && raw.framing.maxMetadataBytes <= FRAME_LIMIT &&
     positive(raw.framing.maxDataBytes) && raw.framing.maxDataBytes <= FRAME_LIMIT && positive(raw.framing.maxUploadFrames) &&
     Object.entries(raw.limits).every(([key, limit]) => key === 'maxQueued' || key === 'maxQueuedPerPartition' ? nonnegativeInteger(limit) : positive(limit)) &&
@@ -105,6 +106,7 @@ export function copyCapabilities(value: Capabilities): Capabilities {
   return {
     service: value.service, build: value.build, profiles: [...value.profiles],
     headerDescriptors: value.headerDescriptors.map(item => ({ tlsProfile: item.tlsProfile, headers: item.headers.map(([name, content]) => [name, content]) })),
+    profileAliases: Object.fromEntries(Object.entries(value.profileAliases)),
     framing: { contentType: value.framing.contentType, maxMetadataBytes: value.framing.maxMetadataBytes, maxDataBytes: value.framing.maxDataBytes, maxUploadFrames: value.framing.maxUploadFrames },
     modes: { egress: [...value.modes.egress], cookies: [...value.modes.cookies], stream: [...value.modes.stream], cancel: [...value.modes.cancel] },
     limits: {
@@ -120,6 +122,11 @@ export function copyCapabilities(value: Capabilities): Capabilities {
       registryCapacity: limits.registryCapacity, registryTtlMs: limits.registryTtlMs,
     },
   };
+}
+/** Concrete profile for a profile name or alias; `undefined` if the service offers neither. */
+export function resolveProfile(caps: Capabilities, name: string): string | undefined {
+  if (caps.profiles.includes(name)) return name;
+  return Object.hasOwn(caps.profileAliases, name) ? caps.profileAliases[name] : undefined;
 }
 export function parseJson(bytes: Uint8Array): unknown { return JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes)) as unknown; }
 export function jsonBytes(value: unknown, limit = FRAME_LIMIT): Uint8Array<ArrayBuffer> {
