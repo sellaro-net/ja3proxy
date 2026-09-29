@@ -21,11 +21,20 @@ The branch is upstream [0x676e67/wreq](https://github.com/0x676e67/wreq) `main` 
 The service keeps Mozilla roots: `wreq` is used with `default-features = false` and
 the `webpki-roots` feature (upstream `main` defaults to `chromium-roots`).
 
-`http2` is pinned to [sellaro-net/http2](https://github.com/sellaro-net/http2)
-`bdb2c60cd9b4125c28913191b6f758d00e5f136c`, unmodified upstream `master`, because
-`http2::ext::HeadersPriority` is not on crates.io yet. `btls`, `btls-sys` and
-`tokio-btls` are pinned to an upstream `btls` revision that exposes the TLS APIs
-above.
+## Upstream pins without a fork
+
+Only `wreq` carries patches, so only `wreq` has a fork. Dependencies that need an
+unreleased upstream state are pinned to the upstream repository by commit:
+
+| Crate | Source | Why |
+|---|---|---|
+| `http2` | [0x676e67/http2](https://github.com/0x676e67/http2) `bdb2c60cd9b4125c28913191b6f758d00e5f136c` (`master`) | `http2::ext::HeadersPriority` (per-request HEADERS priority) is not in a crates.io release yet (latest: 0.5.20). |
+| `btls`, `btls-sys`, `tokio-btls` | [0x676e67/btls](https://github.com/0x676e67/btls) `1e980877343872b671d18a185395e31c10cc51d5` | ML-DSA in the TLS signature-algorithm catalog and the `server_padding` API are not released yet. |
+
+The fork pins the same `http2` commit in its own `[patch.crates-io]`, so its tests
+run against the code the service ships. Fork a dependency only when it needs a
+change of its own; an unchanged fork adds maintenance without isolating anything
+a commit pin does not.
 
 ### Updating
 
@@ -40,4 +49,6 @@ above.
 4. Build the image and compare its TLS/HTTP/2 fingerprints with the previous
    image before release.
 
-Drop the `http2` pin once a crates.io release contains `ext::HeadersPriority`.
+Replace each upstream pin with the crates.io release once one contains the
+required API (`http2`: `ext::HeadersPriority`; `btls`: `server_padding` and ML-DSA
+signature algorithms), then rerun the golden tests.

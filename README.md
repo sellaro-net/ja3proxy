@@ -91,6 +91,32 @@ successful terminal frame. Request IDs and the final status summary go to stderr
 - [Cancel a request or inspect its status](docs/usage.md#cancellation-and-status)
 - [Troubleshoot errors](docs/usage.md#troubleshooting)
 
+## Browser fidelity
+
+A profile is only as good as its match with the real browser. The Chrome
+profiles are held to that standard:
+
+- **Measured, not copied.** `chrome_154` and `chrome_155` are compared with
+  captures of real Chrome against a fingerprint echo: JA4, TLS extension set,
+  signature algorithms, supported groups, HTTP/2 settings, pseudo-header order,
+  header order and HEADERS weight. Sanitized captures live in
+  [`src/emulation/golden/`](src/emulation/golden); offline golden tests capture
+  the service's own ClientHello and HTTP/2 frames over loopback and must match them.
+- **Whole identity.** TLS, HTTP/2, header order and per-request priority come
+  from the same profile. With `headerOrder: "browser"` callers supply header
+  values and the service sends them in Chrome's order for the request kind; the
+  HEADERS weight follows the `priority` urgency as in Chrome
+  ([header order](docs/api.md#header-order), [HTTP/2 priority](docs/api.md#http2-priority)).
+- **No silent drift.** Existing profiles keep a byte-identical wire image; the
+  golden tests fail on any change. A weekly workflow compares the newest
+  `chrome_<N>` profile with Chrome stable and opens an issue when it falls more
+  than two major versions behind.
+- **Pin concretely.** `chrome_stable` follows the newest verified profile. Pin a
+  concrete profile when state (cookies, clearances) is bound to a user agent,
+  and move deliberately.
+
+Adding a Chrome release follows the checklist in [`AGENTS.md`](AGENTS.md#adding-a-chrome-profile).
+
 ## TypeScript SDK
 
 `packages/typescript` contains the standalone `@sellaro/ja3proxy` package for
@@ -249,7 +275,13 @@ without exposing credentials or private response bodies in public issues.
 
 Rust 1.98.1 is pinned in [`rust-toolchain.toml`](rust-toolchain.toml).
 Native builds also require C/C++, CMake, Go and Clang/libclang. The
-[`Dockerfile`](Dockerfile) provides the Linux build environment.
+[`Dockerfile`](Dockerfile) provides the Linux build environment; without the native
+toolchain, build its `builder` stage and run cargo inside it:
+
+```sh
+docker build --target builder -t ja3proxy-builder .
+docker run --rm -v "$PWD":/src -w /src ja3proxy-builder cargo test --all-features --locked
+```
 
 ```sh
 export JA3_PROXY_TOKEN="$(openssl rand -hex 32)"
@@ -264,10 +296,13 @@ cargo clippy --all-targets --all-features --locked -- -D warnings
 cargo test --all-features --locked
 ```
 
-The `wreq` dependency is pinned to a fork with transport patches for address and
-cancellation ownership and Chrome ClientHello parity. Read the
-[dependency notes and update procedure](docs/dependencies.md) before updating it. Third-party code keeps its own license terms. The TypeScript
-SDK has its own MIT grant; there is no repository-wide license grant for the Rust code.
+`wreq` is pinned to a fork ([sellaro-net/wreq](https://github.com/sellaro-net/wreq))
+whose patches (address and cancellation ownership, Chrome ClientHello parity,
+per-request HTTP/2 priority) are individual commits on top of upstream. `http2` and
+`btls` are pinned to unreleased upstream commits without forks. Read the
+[dependency notes and update procedure](docs/dependencies.md) before updating them.
+Third-party code keeps its own license terms. The TypeScript SDK has its own MIT
+grant; there is no repository-wide license grant for the Rust code.
 
 ## Project links
 
