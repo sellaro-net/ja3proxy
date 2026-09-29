@@ -308,3 +308,29 @@ test('profile aliases are accepted and must be answered with their concrete prof
     assert(!unknown.ok && unknown.error.code === 'INVALID_PROFILE');
   } finally { await sdk.close(); }
 });
+
+test('headerOrder is sent only for browser order and unknown values fail locally', async () => {
+  const sent: unknown[] = [];
+  const sdk = client(async (input, init) => {
+    if (new URL(String(input)).pathname === '/capabilities') return Response.json(caps);
+    assert(init?.body instanceof ReadableStream);
+    const reader = new FrameReader(init.body, 65_536, 65_536);
+    const first = await reader.next();
+    const value = parseJson(first!.payload);
+    assert(record(value) && typeof value.requestId === 'string');
+    sent.push(value.headerOrder);
+    while (true) { const next = await reader.next(); if (next?.type === 3) break; }
+    const envelope = { requestId: value.requestId, attempt: 0, method: 'GET' };
+    return response(envelope, diag => success(diag));
+  });
+  try {
+    for (const headerOrder of [undefined, 'caller', 'browser'] as const) {
+      const result = await sdk.tryRequest({ ...target, ...(headerOrder ? { headerOrder } : {}) });
+      assert(result.ok);
+    }
+    assert.deepEqual(sent, [undefined, undefined, 'browser']);
+    const invalid = await sdk.tryRequest({ ...target, headerOrder: 'chrome' as never });
+    assert(!invalid.ok && invalid.error.code === 'INVALID_REQUEST');
+    assert.equal(sent.length, 3);
+  } finally { await sdk.close(); }
+});

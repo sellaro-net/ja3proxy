@@ -7,7 +7,7 @@ mod chrome;
 mod tests;
 
 use crate::error::{ErrorCode, TransportError};
-use crate::models::HeaderDescriptor;
+use crate::models::{HeaderDescriptor, HeaderOrder};
 use std::{borrow::Cow, collections::BTreeMap};
 use wreq::{
     IntoEmulation, Method,
@@ -146,9 +146,9 @@ impl TlsProfile {
         }
     }
 
-    /// Per-request shaping. Chrome profiles order headers like Chrome's network
-    /// stack; only profiles that opt in derive the HEADERS weight per request,
-    /// all others keep their connection default.
+    /// Per-request shaping. With `headerOrder: "browser"`, Chrome profiles order headers
+    /// like Chrome's network stack; only profiles that opt in derive the HEADERS weight
+    /// per request, all others keep their connection default.
     pub(crate) fn shaping(self) -> RequestShaping {
         match self {
             Self::Registry(profile) => RequestShaping {
@@ -297,12 +297,15 @@ impl RequestShaping {
     /// `caller` holds the request's own headers, `defaults` the client default
     /// headers the request inherits (empty without header emulation). The request
     /// kind and urgency come from the effective values (caller before default).
+    /// The Chrome order template applies only to [`HeaderOrder::Browser`]; the
+    /// caller order is otherwise left to the client unchanged.
     pub(crate) fn shape(
         self,
         method: &Method,
         has_body: bool,
         caller: &HeaderMap,
         defaults: &HeaderMap,
+        header_order: HeaderOrder,
     ) -> Shaped {
         let effective = |name: &str| {
             caller
@@ -310,7 +313,11 @@ impl RequestShaping {
                 .or_else(|| defaults.get(name))
                 .and_then(|value| value.to_str().ok())
         };
-        let orig_headers = self.order.map(|order| {
+        let template = match header_order {
+            HeaderOrder::Browser => self.order,
+            HeaderOrder::Caller => None,
+        };
+        let orig_headers = template.map(|order| {
             let kind = chrome::request_kind(method, has_body, effective);
             let names = caller
                 .keys()

@@ -6,7 +6,6 @@ on:
       - 'packages/typescript/**'
       - 'contracts/**'
       - 'src/**'
-      - 'vendor/**'
       - 'Cargo.*'
       - 'rust-toolchain.toml'
       - 'Dockerfile'

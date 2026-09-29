@@ -52,8 +52,10 @@ export interface ClientOptions {
   controlTimeoutMs?: number; capabilitiesTtlMs?: number; defaultTimeoutMs?: number; maxResponseBytes?: number;
 }
 export type RequestBody = string | Uint8Array | ReadableStream<Uint8Array> | AsyncIterable<Uint8Array> | null;
+/** Header wire order: `caller` (default) keeps the given order; `browser` applies the Chrome order of Chrome profiles. */
+export type Ja3HeaderOrder = NonNullable<Wire.RequestMetadata['headerOrder']>;
 export interface SessionRequestOptions {
-  url: string | URL; method: string; headers?: HeadersInput;
+  url: string | URL; method: string; headers?: HeadersInput; headerOrder?: Ja3HeaderOrder;
   body?: RequestBody; timeoutMs?: number; maxResponseBytes?: number; attempt?: number; requestId?: string;
   signal?: AbortSignal; observer?: ExchangeObserver;
 }
@@ -71,7 +73,7 @@ export interface StreamingResponse {
 export type FetchObserver = ExchangeObserver | ((url: URL, init?: RequestInit) => ExchangeObserver | undefined);
 export interface FetchOptions {
   partition: string; connection: ConnectionSpec; timeoutMs?: number; maxResponseBytes?: number; attempt?: number;
-  context?: 'stateless' | 'session'; observer?: FetchObserver;
+  headerOrder?: Ja3HeaderOrder; context?: 'stateless' | 'session'; observer?: FetchObserver;
 }
 export type ScopedFetch = ((input: string | URL | Request, init?: RequestInit) => Promise<Response>) & {
   close(): Promise<void>; [Symbol.asyncDispose](): Promise<void>;

@@ -544,6 +544,7 @@ async fn header_emulation_and_fixed_user_agent_are_effective_on_wire() {
         &Method::GET,
         false,
         &[("user-agent".into(), "different-agent".into())],
+        HeaderOrder::Caller,
     );
     assert_eq!(inconsistent.err().unwrap().code, ErrorCode::ContextConflict);
     let builder = client
@@ -555,6 +556,7 @@ async fn header_emulation_and_fixed_user_agent_are_effective_on_wire() {
                 ("X-Repeated".into(), "a".into()),
                 ("X-Repeated".into(), "b".into()),
             ],
+            HeaderOrder::Caller,
         )
         .unwrap();
     response(builder).await.bytes().await.unwrap();

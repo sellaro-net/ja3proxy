@@ -187,6 +187,7 @@ export class Ja3ProxyClient {
       if (!opaque(requestId) || !nonnegativeInteger(attempt)) throw new Ja3ProxyTransportError('INVALID_REQUEST', diag, usedProxy, 'invalid_input');
       validatePartition(options.partition);
       if ((options.contextId === undefined) === (options.connection === undefined) || (options.contextId !== undefined && !opaque(options.contextId))) throw new Ja3ProxyTransportError('INVALID_REQUEST', diag, usedProxy, 'invalid_input');
+      if (options.headerOrder !== undefined && options.headerOrder !== 'caller' && options.headerOrder !== 'browser') throw new Ja3ProxyTransportError('INVALID_REQUEST', diag, usedProxy, 'invalid_input');
       let target: URL;
       let headers: [string, string][];
       try {
@@ -216,7 +217,7 @@ export class Ja3ProxyClient {
       if (deadline.timeoutMs > caps.limits.maxTimeoutMs || maximum > caps.limits.maxResponseBytes || headers.length > caps.limits.maxHeaders || headers.reduce((sum, [name, value]) => sum + encoder.encode(name).length + encoder.encode(value).length, 0) > caps.limits.maxHeaderBytes) throw new Ja3ProxyTransportError('INVALID_REQUEST', diag, usedProxy);
       const bodyLength = body instanceof Uint8Array ? body.length : undefined;
       if (bodyLength !== undefined && bodyLength > caps.limits.maxRequestBytes) throw new Ja3ProxyTransportError('BODY_TOO_LARGE', diag, usedProxy);
-      const wire = { requestId, partition: options.partition, ...(options.connection ? { connection: options.connection } : { contextId: options.contextId }), url: target.toString(), method, headers, timeoutMs: deadline.remaining(), maxResponseBytes: maximum, attempt, hasBody: body != null, ...(bodyLength === undefined ? {} : { bodyLength }) };
+      const wire = { requestId, partition: options.partition, ...(options.connection ? { connection: options.connection } : { contextId: options.contextId }), url: target.toString(), method, headers, ...(options.headerOrder === 'browser' ? { headerOrder: 'browser' as const } : {}), timeoutMs: deadline.remaining(), maxResponseBytes: maximum, attempt, hasBody: body != null, ...(bodyLength === undefined ? {} : { bodyLength }) };
       if (!validateWire('requestMetadata', wire)) throw new Ja3ProxyTransportError('INVALID_REQUEST', diag, usedProxy);
       let bytes: Uint8Array;
       try { bytes = jsonBytes(wire, caps.framing.maxMetadataBytes); } catch { throw new Ja3ProxyTransportError('BODY_TOO_LARGE', diag, usedProxy); }

@@ -312,7 +312,13 @@ fn chrome_155_orders_every_captured_request_kind_like_chrome() {
             .collect();
         // content-length is transport framing, appended by the service, not the caller.
         expected.retain(|name| name != "content-length");
-        let shaped = shaping.shape(&method, has_body, &caller, &HeaderMap::new());
+        let shaped = shaping.shape(
+            &method,
+            has_body,
+            &caller,
+            &HeaderMap::new(),
+            HeaderOrder::Browser,
+        );
         assert_eq!(
             wire_order(&shaped, &caller, &HeaderMap::new()),
             expected,
@@ -352,7 +358,13 @@ fn unknown_headers_keep_caller_order_at_the_application_slot() {
         ("sec-ch-ua", "brand"),
     ]);
     let defaults = headers(&[("x-default", "d"), ("accept", "*/*"), ("x-first", "0")]);
-    let shaped = shaping.shape(&Method::GET, false, &caller, &defaults);
+    let shaped = shaping.shape(
+        &Method::GET,
+        false,
+        &caller,
+        &defaults,
+        HeaderOrder::Browser,
+    );
     assert_eq!(
         wire_order(&shaped, &caller, &defaults),
         [
@@ -445,10 +457,22 @@ fn caller_fetch_metadata_and_priority_override_emulated_defaults() {
     let shaping = profile("chrome_155").shaping();
     let defaults = profile_emulation(profile("chrome_155"), true).headers;
     // Defaults describe a navigation with urgency 0.
-    let navigation = shaping.shape(&Method::GET, false, &HeaderMap::new(), &defaults);
+    let navigation = shaping.shape(
+        &Method::GET,
+        false,
+        &HeaderMap::new(),
+        &defaults,
+        HeaderOrder::Browser,
+    );
     assert_eq!(navigation.weight, Some(256));
     let caller = headers(&[("sec-fetch-mode", "cors"), ("priority", "u=1, i")]);
-    let fetch = shaping.shape(&Method::GET, false, &caller, &defaults);
+    let fetch = shaping.shape(
+        &Method::GET,
+        false,
+        &caller,
+        &defaults,
+        HeaderOrder::Browser,
+    );
     assert_eq!(fetch.weight, Some(220));
     let order = wire_order(&fetch, &caller, &defaults);
     assert_eq!(
@@ -466,7 +490,13 @@ fn chrome_default_headers_are_already_in_template_order() {
             continue;
         }
         let defaults = profile_emulation(tls_profile, true).headers;
-        let shaped = shaping.shape(&Method::GET, false, &HeaderMap::new(), &defaults);
+        let shaped = shaping.shape(
+            &Method::GET,
+            false,
+            &HeaderMap::new(),
+            &defaults,
+            HeaderOrder::Browser,
+        );
         let own: Vec<String> = defaults
             .keys()
             .map(|name| name.as_str().to_owned())
@@ -481,13 +511,33 @@ fn chrome_default_headers_are_already_in_template_order() {
 }
 
 #[test]
+fn caller_order_leaves_every_profile_unordered_but_keeps_weights() {
+    let caller = headers(&[("priority", "u=1, i"), ("sec-fetch-mode", "cors")]);
+    for name in available_profiles() {
+        let shaped = profile(&name).shaping().shape(
+            &Method::GET,
+            false,
+            &caller,
+            &HeaderMap::new(),
+            HeaderOrder::Caller,
+        );
+        assert!(shaped.orig_headers.is_none(), "{name}");
+        let derives = matches!(name.as_str(), "chrome_154" | "chrome_155");
+        assert_eq!(shaped.weight.is_some(), derives, "{name}");
+    }
+}
+
+#[test]
 fn only_chrome_profiles_are_shaped_and_only_new_ones_derive_weights() {
     let caller = headers(&[("priority", "u=0, i"), ("sec-fetch-mode", "navigate")]);
     for name in available_profiles() {
-        let shaped =
-            profile(&name)
-                .shaping()
-                .shape(&Method::GET, false, &caller, &HeaderMap::new());
+        let shaped = profile(&name).shaping().shape(
+            &Method::GET,
+            false,
+            &caller,
+            &HeaderMap::new(),
+            HeaderOrder::Browser,
+        );
         let chrome = name.starts_with("chrome_");
         assert_eq!(shaped.orig_headers.is_some(), chrome, "{name}");
         let derives = matches!(name.as_str(), "chrome_154" | "chrome_155");
@@ -499,6 +549,7 @@ fn only_chrome_profiles_are_shaped_and_only_new_ones_derive_weights() {
         false,
         &HeaderMap::new(),
         &HeaderMap::new(),
+        HeaderOrder::Browser,
     );
     assert!(shaped.weight.is_none());
 }

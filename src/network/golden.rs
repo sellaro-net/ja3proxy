@@ -2,7 +2,7 @@
 //! compared with the sanitized capture of real Chrome in `emulation/golden`.
 //! Loopback only.
 use super::*;
-use crate::models::BrowserIdentity;
+use crate::models::{BrowserIdentity, HeaderOrder};
 use futures_util::StreamExt;
 use serde_json::Value;
 use std::{collections::BTreeSet, pin::Pin};
@@ -574,6 +574,7 @@ async fn chrome_155_http2_frames_match_real_chrome() {
             &Method::GET,
             false,
             headers,
+            HeaderOrder::Browser,
         );
         let _ = timeout(TEST_TIMEOUT, request.timeout(TEST_TIMEOUT).send()).await;
     }
@@ -602,6 +603,7 @@ async fn chrome_149_http2_request_with_emulated_headers_is_unchanged() {
         &Method::GET,
         false,
         HeaderMap::new(),
+        HeaderOrder::Caller,
     );
     let _ = timeout(TEST_TIMEOUT, request.timeout(TEST_TIMEOUT).send()).await;
     let seen = timeout(TEST_TIMEOUT, server).await.unwrap().unwrap();
@@ -676,6 +678,7 @@ async fn http1_requests_use_the_same_chrome_order_behind_host() {
             &Method::GET,
             false,
             &pairs,
+            HeaderOrder::Browser,
         )
         .unwrap();
     builder.timeout(TEST_TIMEOUT).send().await.unwrap();
@@ -683,4 +686,186 @@ async fn http1_requests_use_the_same_chrome_order_behind_host() {
     let mut expected = vec!["host".to_owned()];
     expected.extend(golden_names("navigation"));
     assert_eq!(names, expected);
+}
+
+/// Header order of a real Chrome XHR (with client hints), used as an arbitrary caller order.
+const XHR_ORDER: [&str; 24] = [
+    "sec-ch-ua-full-version-list",
+    "sec-ch-ua-platform",
+    "viewport-width",
+    "device-memory",
+    "sec-ch-dpr",
+    "sec-ch-ua",
+    "sec-ch-ua-mobile",
+    "x-requested-with",
+    "accept",
+    "sec-ch-viewport-width",
+    "downlink",
+    "ect",
+    "sec-ch-device-memory",
+    "dpr",
+    "user-agent",
+    "rtt",
+    "sec-ch-ua-platform-version",
+    "sec-fetch-site",
+    "sec-fetch-mode",
+    "sec-fetch-dest",
+    "referer",
+    "accept-encoding",
+    "accept-language",
+    "priority",
+];
+
+fn xhr_headers() -> Vec<(String, String)> {
+    XHR_ORDER
+        .iter()
+        .map(|&name| {
+            let value = match name {
+                "sec-ch-ua" => SEC_CH_UA_155,
+                "sec-ch-ua-platform" => "\"Windows\"",
+                "sec-ch-ua-mobile" => "?0",
+                "x-requested-with" => "XMLHttpRequest",
+                "accept" => "application/json, text/javascript, */*; q=0.01",
+                "user-agent" => UA_155,
+                "sec-fetch-site" => "same-origin",
+                "sec-fetch-mode" => "cors",
+                "sec-fetch-dest" => "empty",
+                "referer" => "https://golden.test/list",
+                "accept-encoding" => "gzip, deflate, br, zstd",
+                "accept-language" => "de-DE,de;q=0.9",
+                "priority" => "u=1, i",
+                _ => "8",
+            };
+            (name.to_owned(), value.to_owned())
+        })
+        .collect()
+}
+
+/// Sends one HTTP/1 GET through the full service path and returns the raw header lines.
+async fn http1_header_lines(
+    profile: &str,
+    headers: &[(String, String)],
+    header_order: HeaderOrder,
+) -> (u16, Vec<String>) {
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let port = listener.local_addr().unwrap().port();
+    let server = tokio::spawn(async move {
+        let (mut socket, _) = listener.accept().await.unwrap();
+        let mut head = Vec::new();
+        while !head.ends_with(b"\r\n\r\n") {
+            head.push(socket.read_u8().await.unwrap());
+        }
+        socket
+            .write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n")
+            .await
+            .unwrap();
+        String::from_utf8(head)
+            .unwrap()
+            .split("\r\n")
+            .skip(1)
+            .filter(|line| !line.is_empty())
+            .map(str::to_owned)
+            .collect::<Vec<_>>()
+    });
+    let client = network_client(profile, false);
+    let builder = client
+        .apply_headers(
+            client
+                .request(Method::GET, &format!("http://golden.test:{port}/"))
+                .await
+                .unwrap(),
+            &Method::GET,
+            false,
+            headers,
+            header_order,
+        )
+        .unwrap();
+    builder.timeout(TEST_TIMEOUT).send().await.unwrap();
+    (port, timeout(TEST_TIMEOUT, server).await.unwrap().unwrap())
+}
+
+/// The caller's header lines, byte for byte, followed by the client-generated `host`.
+fn raw_lines(port: u16, headers: &[(String, String)]) -> Vec<String> {
+    headers
+        .iter()
+        .map(|(name, value)| format!("{name}: {value}"))
+        .chain(std::iter::once(format!("host: golden.test:{port}")))
+        .collect()
+}
+
+#[tokio::test]
+async fn caller_header_order_is_sent_byte_for_byte() {
+    let headers = xhr_headers();
+    let (port, lines) = http1_header_lines("chrome_155", &headers, HeaderOrder::Caller).await;
+    assert_eq!(lines, raw_lines(port, &headers));
+}
+
+#[tokio::test]
+async fn caller_header_order_is_kept_over_http2_with_priority_weight() {
+    let (port, roots, server) = h2_server(1).await;
+    let profile = parse_tls_profile("chrome_155").unwrap();
+    let mut headers = HeaderMap::new();
+    for (name, value) in xhr_headers() {
+        headers.append(
+            HeaderName::from_bytes(name.as_bytes()).unwrap(),
+            HeaderValue::from_str(&value).unwrap(),
+        );
+    }
+    let request = shape_request(
+        h2_client(profile, false, roots).get(format!("https://golden.test:{port}/")),
+        profile.shaping(),
+        &HeaderMap::new(),
+        &Method::GET,
+        false,
+        headers,
+        HeaderOrder::Caller,
+    );
+    let _ = timeout(TEST_TIMEOUT, request.timeout(TEST_TIMEOUT).send()).await;
+    let seen = timeout(TEST_TIMEOUT, server).await.unwrap().unwrap();
+    assert_eq!(seen[0].headers, XHR_ORDER);
+    // `priority: u=1, i` still sets Chrome's HEADERS weight.
+    assert_eq!(seen[0].weight, Some(220));
+}
+
+#[tokio::test]
+async fn browser_header_order_applies_the_chrome_template() {
+    let headers = xhr_headers();
+    let profile = parse_tls_profile("chrome_155").unwrap();
+    let mut map = HeaderMap::new();
+    for (name, value) in &headers {
+        map.append(
+            HeaderName::from_bytes(name.as_bytes()).unwrap(),
+            HeaderValue::from_str(value).unwrap(),
+        );
+    }
+    let expected: Vec<String> = profile
+        .shaping()
+        .shape(
+            &Method::GET,
+            false,
+            &map,
+            &HeaderMap::new(),
+            HeaderOrder::Browser,
+        )
+        .orig_headers
+        .unwrap()
+        .iter()
+        .map(|(name, _)| name.as_str().to_owned())
+        .filter(|name| map.contains_key(name.as_str()))
+        .collect();
+    assert_ne!(expected, XHR_ORDER);
+    let (_, lines) = http1_header_lines("chrome_155", &headers, HeaderOrder::Browser).await;
+    let names: Vec<String> = lines
+        .iter()
+        .map(|line| line.split_once(':').unwrap().0.to_owned())
+        .filter(|name| name != "host")
+        .collect();
+    assert_eq!(names, expected);
+}
+
+#[tokio::test]
+async fn browser_header_order_is_ignored_for_non_chrome_profiles() {
+    let headers = xhr_headers();
+    let (port, lines) = http1_header_lines("okhttp_4.12", &headers, HeaderOrder::Browser).await;
+    assert_eq!(lines, raw_lines(port, &headers));
 }

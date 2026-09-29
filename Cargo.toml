@@ -16,8 +16,9 @@ schema-export = ["dep:schemars"]
 # Runtime
 tokio = { version = "1.53.1", features = ["full"] }
 
-# HTTP client and browser emulation use upstream's renumbered stable release pair.
-wreq = { version = "=0.16.1", features = ["json", "socks", "gzip", "brotli", "zstd", "deflate", "stream"] }
+# HTTP client and browser emulation. wreq resolves to the fork pinned in [patch.crates-io]
+# (see docs/dependencies.md). Mozilla roots (webpki-roots) stay the verification store.
+wreq = { version = "0.16.1", default-features = false, features = ["webpki-roots", "tokio-rt", "json", "socks", "gzip", "brotli", "zstd", "deflate", "stream"] }
 wreq-util = { version = "0.2.0", features = ["emulation-serde", "emulation-compression"] }
 # Inspect the existing TLS backend's typed errors instead of matching error text.
 btls = { version = "0.5.6", default-features = false }
@@ -66,10 +67,10 @@ panic = "abort"
 strip = true
 
 [patch.crates-io]
-wreq = { path = "vendor/wreq" }
-# http2 0.5.20 mit Priorität pro Request im HEADERS-Frame (siehe
-# vendor/http2/transport-provenance.json).
-http2 = { path = "vendor/http2" }
+# wreq fork: upstream main plus the transport patches listed in docs/dependencies.md.
+wreq = { git = "https://github.com/sellaro-net/wreq", rev = "1aa722637ab7c53ddd7b80d0f5bd8df3d889cc69" }
+# http2 with per-request HEADERS priority (http2::ext::HeadersPriority, not yet on crates.io).
+http2 = { git = "https://github.com/sellaro-net/http2", rev = "bdb2c60cd9b4125c28913191b6f758d00e5f136c" }
 # BoringSSL mit ML-DSA im TLS-Signaturalgorithmen-Katalog (mldsa44/65/87),
 # Signaturalgorithmen-GREASE, Trust-Anchor-IDs und der server_padding-Extension
 # (0x12e0), die aktuelles Chrome (>= 154) ankündigt. Revision 1e98087 ist der

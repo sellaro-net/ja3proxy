@@ -82,6 +82,7 @@ The first request frame contains this JSON shape:
 | `url` | HTTP(S) destination, subject to address and context-origin policies. |
 | `method` | HTTP method. Redirects are returned, not followed. |
 | `headers` | Required array of `[name, value]` pairs. Repeated headers are supported. |
+| `headerOrder` | Optional `"caller"` (default) or `"browser"`; see [header order](#header-order). Other values are rejected with `INVALID_REQUEST`. |
 | `hasBody` | Required boolean. `false` preserves a genuinely bodyless upstream request. |
 | `bodyLength` | Optional exact raw byte count; enforced when supplied. |
 | `timeoutMs` | Positive total budget including admission, upload and response, within service limits. |
@@ -127,9 +128,23 @@ accepted wherever a profile is; diagnostics and context metadata report the
 concrete profile. The alias moves with new releases, so pin a concrete profile
 when the identity must stay fixed (for example, state bound to a user agent).
 
-**Header order (all `chrome_*` profiles, with or without header emulation).**
-Headers are sent in Chrome's order for the request kind, independent of the
-order the caller supplies them:
+A scheduled workflow (`.github/workflows/chrome-freshness.yml`) compares the
+newest `chrome_<N>` profile with Chrome stable weekly and keeps one issue open
+while the gap exceeds two major versions.
+
+#### Header order
+
+`headerOrder` selects the wire order of the request headers, for connection and
+context requests alike:
+
+- `"caller"` (default, also when the field is absent): headers are sent in the
+  order of `headers`, byte for byte, as in earlier releases.
+- `"browser"`: `chrome_*` profiles (with or without header emulation) send the
+  headers in Chrome's order for the request kind, independent of the order the
+  caller supplies them. Non-Chrome profiles ignore the setting and keep the
+  caller's order.
+
+Chrome order templates used by `"browser"`:
 
 | Kind | Selected when | Order (HTTP/2, after pseudo headers) |
 |------|---------------|--------------------------------------|
@@ -141,17 +156,15 @@ order the caller supplies them:
 where Chrome places headers set by a page or extension. The request kind and
 urgency use the caller's value, falling back to the emulated default. Values,
 repeated headers and cookie handling are unchanged. HTTP/1 requests use the same
-order behind `host`. Non-Chrome profiles keep the caller's order.
+order behind `host`.
 
-**HTTP/2 priority (`chrome_154`, `chrome_155`).** The HEADERS frame weight
-follows the urgency of the effective `priority` header like Chrome: `u=0` →
-256, `u=1` → 220, `u=2` → 183, `u=3` or no `u` → 147, `u=4` → 110, `u=5` → 74,
-`u=6` → 37, `u=7` → 1. Without a `priority` header the connection default (220)
-applies. Other profiles always use their connection default.
+#### HTTP/2 priority
 
-A scheduled workflow (`.github/workflows/chrome-freshness.yml`) compares the
-newest `chrome_<N>` profile with Chrome stable weekly and keeps one issue open
-while the gap exceeds two major versions.
+For `chrome_154` and `chrome_155` the HEADERS frame weight follows the urgency
+of the effective `priority` header like Chrome, with either `headerOrder`:
+`u=0` → 256, `u=1` → 220, `u=2` → 183, `u=3` or no `u` → 147, `u=4` → 110,
+`u=5` → 74, `u=6` → 37, `u=7` → 1. Without a `priority` header the connection
+default (220) applies. Other profiles always use their connection default.
 
 ## Wire format
 

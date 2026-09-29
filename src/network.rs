@@ -4,7 +4,7 @@ pub use crate::validation::validate_origin;
 use crate::{
     emulation::{RequestShaping, TlsProfile, parse_tls_profile, profile_emulation},
     error::{ErrorCode, TransportError},
-    models::{ConnectionSpec, Egress},
+    models::{ConnectionSpec, Egress, HeaderOrder},
     validation::{blocked_hostname, parse_target, public_ip},
 };
 use std::{
@@ -84,7 +84,7 @@ impl Resolve for GuardedResolver {
             policy.check_addresses(&addresses)?;
             ensure_open(&closed)?;
             // These exact addresses go into TCP connect / numeric proxy negotiation.
-            // The vendored opt-in connector never resolves them again elsewhere.
+            // The resolver-enforced egress connector never resolves them again elsewhere.
             Ok(Box::new(addresses.into_iter()) as Addrs)
         })
     }
@@ -221,14 +221,16 @@ impl NetworkClient {
 
     /// Apply repeated caller headers while protecting transport framing and fixed identity.
     /// Core additionally owns managed Cookie selection; the network never stores cookies.
-    /// Chrome profiles send the headers in Chrome's order for the request kind and, where the
-    /// profile opts in, the HTTP/2 HEADERS weight of the effective `priority` urgency.
+    /// Headers keep the caller's order unless `header_order` is `browser`, which makes Chrome
+    /// profiles send them in Chrome's order for the request kind. Profiles that opt in send the
+    /// HTTP/2 HEADERS weight of the effective `priority` urgency in either mode.
     pub fn apply_headers(
         &self,
         builder: RequestBuilder,
         method: &Method,
         has_body: bool,
         headers: &[(String, String)],
+        header_order: HeaderOrder,
     ) -> Result<RequestBuilder, TransportError> {
         ensure_open(&self.closed)?;
         let mut map = HeaderMap::with_capacity(headers.len());
@@ -264,6 +266,7 @@ impl NetworkClient {
             method,
             has_body,
             map,
+            header_order,
         ))
     }
 
@@ -296,8 +299,9 @@ fn shape_request(
     method: &Method,
     has_body: bool,
     headers: HeaderMap,
+    header_order: HeaderOrder,
 ) -> RequestBuilder {
-    let shaped = shaping.shape(method, has_body, &headers, default_headers);
+    let shaped = shaping.shape(method, has_body, &headers, default_headers, header_order);
     let mut builder = builder.headers(headers);
     if let Some(priority) = shaped.headers_priority() {
         builder = builder.headers_priority(priority);

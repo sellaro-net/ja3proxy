@@ -26,7 +26,7 @@ SOFTWARE.
 */
 // standalone-validators.js
 var requestMetadata = validate10;
-var schema11 = { "$id": "https://ja3proxy.invalid/contracts/requestMetadata.schema.json", "$schema": "http://json-schema.org/draft-07/schema#", "additionalProperties": false, "definitions": { "BrowserIdentity": { "additionalProperties": false, "properties": { "emulateHeaders": { "type": "boolean" }, "tlsProfile": { "type": "string" }, "userAgent": { "type": ["string", "null"] } }, "required": ["tlsProfile", "emulateHeaders"], "type": "object" }, "ConnectionSpec": { "additionalProperties": false, "properties": { "egress": { "$ref": "#/definitions/Egress" }, "identity": { "$ref": "#/definitions/BrowserIdentity" } }, "required": ["egress", "identity"], "type": "object" }, "Egress": { "oneOf": [{ "additionalProperties": false, "properties": { "mode": { "const": "direct", "type": "string" } }, "required": ["mode"], "type": "object" }, { "additionalProperties": false, "properties": { "mode": { "const": "proxy", "type": "string" }, "url": { "type": "string" } }, "required": ["mode", "url"], "type": "object" }] } }, "properties": { "attempt": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "bodyLength": { "default": null, "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "connection": { "anyOf": [{ "$ref": "#/definitions/ConnectionSpec" }, { "type": "null" }], "default": null }, "contextId": { "default": null, "type": ["string", "null"] }, "hasBody": { "type": "boolean" }, "headers": { "items": { "items": [{ "type": "string" }, { "type": "string" }], "maxItems": 2, "minItems": 2, "type": "array" }, "type": "array" }, "maxResponseBytes": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "method": { "type": "string" }, "partition": { "type": "string" }, "requestId": { "type": "string" }, "timeoutMs": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "url": { "type": "string" } }, "required": ["requestId", "partition", "url", "method", "headers", "hasBody", "timeoutMs", "maxResponseBytes", "attempt"], "title": "RequestMetadata", "type": "object" };
+var schema11 = { "$id": "https://ja3proxy.invalid/contracts/requestMetadata.schema.json", "$schema": "http://json-schema.org/draft-07/schema#", "additionalProperties": false, "definitions": { "BrowserIdentity": { "additionalProperties": false, "properties": { "emulateHeaders": { "type": "boolean" }, "tlsProfile": { "type": "string" }, "userAgent": { "type": ["string", "null"] } }, "required": ["tlsProfile", "emulateHeaders"], "type": "object" }, "ConnectionSpec": { "additionalProperties": false, "properties": { "egress": { "$ref": "#/definitions/Egress" }, "identity": { "$ref": "#/definitions/BrowserIdentity" } }, "required": ["egress", "identity"], "type": "object" }, "Egress": { "oneOf": [{ "additionalProperties": false, "properties": { "mode": { "const": "direct", "type": "string" } }, "required": ["mode"], "type": "object" }, { "additionalProperties": false, "properties": { "mode": { "const": "proxy", "type": "string" }, "url": { "type": "string" } }, "required": ["mode", "url"], "type": "object" }] }, "HeaderOrder": { "description": "Header wire order of one request.", "oneOf": [{ "const": "caller", "description": "Headers go on the wire in the caller's order.", "type": "string" }, { "const": "browser", "description": "Chrome profiles order headers like Chrome for the request kind; other profiles keep the\ncaller's order.", "type": "string" }] } }, "properties": { "attempt": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "bodyLength": { "default": null, "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "connection": { "anyOf": [{ "$ref": "#/definitions/ConnectionSpec" }, { "type": "null" }], "default": null }, "contextId": { "default": null, "type": ["string", "null"] }, "hasBody": { "type": "boolean" }, "headerOrder": { "allOf": [{ "$ref": "#/definitions/HeaderOrder" }], "description": "Wire order of the request headers: `caller` (default) sends them in the given order,\n`browser` applies the Chrome profile's order for the request kind." }, "headers": { "items": { "items": [{ "type": "string" }, { "type": "string" }], "maxItems": 2, "minItems": 2, "type": "array" }, "type": "array" }, "maxResponseBytes": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "method": { "type": "string" }, "partition": { "type": "string" }, "requestId": { "type": "string" }, "timeoutMs": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "url": { "type": "string" } }, "required": ["requestId", "partition", "url", "method", "headers", "hasBody", "timeoutMs", "maxResponseBytes", "attempt"], "title": "RequestMetadata", "type": "object" };
 var func2 = Object.prototype.hasOwnProperty;
 var schema14 = { "additionalProperties": false, "properties": { "emulateHeaders": { "type": "boolean" }, "tlsProfile": { "type": "string" }, "userAgent": { "type": ["string", "null"] } }, "required": ["tlsProfile", "emulateHeaders"], "type": "object" };
 function validate11(data, { instancePath = "", parentData, parentDataProperty, rootData = data } = {}) {
@@ -456,60 +456,83 @@ function validate10(data, { instancePath = "", parentData, parentDataProperty, r
                     var valid0 = true;
                   }
                   if (valid0) {
-                    if (data.headers !== void 0) {
-                      let data5 = data.headers;
+                    if (data.headerOrder !== void 0) {
+                      let data5 = data.headerOrder;
                       const _errs15 = errors;
-                      if (errors === _errs15) {
-                        if (Array.isArray(data5)) {
-                          var valid2 = true;
-                          const len0 = data5.length;
-                          for (let i0 = 0; i0 < len0; i0++) {
-                            let data6 = data5[i0];
-                            const _errs17 = errors;
-                            if (errors === _errs17) {
-                              if (Array.isArray(data6)) {
-                                if (data6.length > 2) {
-                                  validate10.errors = [{ instancePath: instancePath + "/headers/" + i0, schemaPath: "#/properties/headers/items/maxItems", keyword: "maxItems", params: { limit: 2 }, message: "must NOT have more than 2 items" }];
-                                  return false;
-                                } else {
-                                  if (data6.length < 2) {
-                                    validate10.errors = [{ instancePath: instancePath + "/headers/" + i0, schemaPath: "#/properties/headers/items/minItems", keyword: "minItems", params: { limit: 2 }, message: "must NOT have fewer than 2 items" }];
-                                    return false;
-                                  } else {
-                                    const len1 = data6.length;
-                                    if (len1 > 0) {
-                                      const _errs19 = errors;
-                                      if (typeof data6[0] !== "string") {
-                                        validate10.errors = [{ instancePath: instancePath + "/headers/" + i0 + "/0", schemaPath: "#/properties/headers/items/items/0/type", keyword: "type", params: { type: "string" }, message: "must be string" }];
-                                        return false;
-                                      }
-                                      var valid3 = _errs19 === errors;
-                                    }
-                                    if (valid3) {
-                                      if (len1 > 1) {
-                                        const _errs21 = errors;
-                                        if (typeof data6[1] !== "string") {
-                                          validate10.errors = [{ instancePath: instancePath + "/headers/" + i0 + "/1", schemaPath: "#/properties/headers/items/items/1/type", keyword: "type", params: { type: "string" }, message: "must be string" }];
-                                          return false;
-                                        }
-                                        var valid3 = _errs21 === errors;
-                                      }
-                                    }
-                                  }
-                                }
-                              } else {
-                                validate10.errors = [{ instancePath: instancePath + "/headers/" + i0, schemaPath: "#/properties/headers/items/type", keyword: "type", params: { type: "array" }, message: "must be array" }];
-                                return false;
-                              }
-                            }
-                            var valid2 = _errs17 === errors;
-                            if (!valid2) {
-                              break;
-                            }
-                          }
+                      const _errs18 = errors;
+                      let valid4 = false;
+                      let passing0 = null;
+                      const _errs19 = errors;
+                      if (typeof data5 !== "string") {
+                        const err2 = { instancePath: instancePath + "/headerOrder", schemaPath: "#/definitions/HeaderOrder/oneOf/0/type", keyword: "type", params: { type: "string" }, message: "must be string" };
+                        if (vErrors === null) {
+                          vErrors = [err2];
                         } else {
-                          validate10.errors = [{ instancePath: instancePath + "/headers", schemaPath: "#/properties/headers/type", keyword: "type", params: { type: "array" }, message: "must be array" }];
-                          return false;
+                          vErrors.push(err2);
+                        }
+                        errors++;
+                      }
+                      if ("caller" !== data5) {
+                        const err3 = { instancePath: instancePath + "/headerOrder", schemaPath: "#/definitions/HeaderOrder/oneOf/0/const", keyword: "const", params: { allowedValue: "caller" }, message: "must be equal to constant" };
+                        if (vErrors === null) {
+                          vErrors = [err3];
+                        } else {
+                          vErrors.push(err3);
+                        }
+                        errors++;
+                      }
+                      var _valid1 = _errs19 === errors;
+                      if (_valid1) {
+                        valid4 = true;
+                        passing0 = 0;
+                      }
+                      const _errs21 = errors;
+                      if (typeof data5 !== "string") {
+                        const err4 = { instancePath: instancePath + "/headerOrder", schemaPath: "#/definitions/HeaderOrder/oneOf/1/type", keyword: "type", params: { type: "string" }, message: "must be string" };
+                        if (vErrors === null) {
+                          vErrors = [err4];
+                        } else {
+                          vErrors.push(err4);
+                        }
+                        errors++;
+                      }
+                      if ("browser" !== data5) {
+                        const err5 = { instancePath: instancePath + "/headerOrder", schemaPath: "#/definitions/HeaderOrder/oneOf/1/const", keyword: "const", params: { allowedValue: "browser" }, message: "must be equal to constant" };
+                        if (vErrors === null) {
+                          vErrors = [err5];
+                        } else {
+                          vErrors.push(err5);
+                        }
+                        errors++;
+                      }
+                      var _valid1 = _errs21 === errors;
+                      if (_valid1 && valid4) {
+                        valid4 = false;
+                        passing0 = [passing0, 1];
+                      } else {
+                        if (_valid1) {
+                          valid4 = true;
+                          passing0 = 1;
+                        }
+                      }
+                      if (!valid4) {
+                        const err6 = { instancePath: instancePath + "/headerOrder", schemaPath: "#/definitions/HeaderOrder/oneOf", keyword: "oneOf", params: { passingSchemas: passing0 }, message: "must match exactly one schema in oneOf" };
+                        if (vErrors === null) {
+                          vErrors = [err6];
+                        } else {
+                          vErrors.push(err6);
+                        }
+                        errors++;
+                        validate10.errors = vErrors;
+                        return false;
+                      } else {
+                        errors = _errs18;
+                        if (vErrors !== null) {
+                          if (_errs18) {
+                            vErrors.length = _errs18;
+                          } else {
+                            vErrors = null;
+                          }
                         }
                       }
                       var valid0 = _errs15 === errors;
@@ -517,24 +540,60 @@ function validate10(data, { instancePath = "", parentData, parentDataProperty, r
                       var valid0 = true;
                     }
                     if (valid0) {
-                      if (data.maxResponseBytes !== void 0) {
-                        let data9 = data.maxResponseBytes;
+                      if (data.headers !== void 0) {
+                        let data6 = data.headers;
                         const _errs23 = errors;
-                        if (!(typeof data9 == "number" && (!(data9 % 1) && !isNaN(data9)) && isFinite(data9))) {
-                          validate10.errors = [{ instancePath: instancePath + "/maxResponseBytes", schemaPath: "#/properties/maxResponseBytes/type", keyword: "type", params: { type: "integer" }, message: "must be integer" }];
-                          return false;
-                        }
                         if (errors === _errs23) {
-                          if (typeof data9 == "number" && isFinite(data9)) {
-                            if (data9 > 9007199254740991 || isNaN(data9)) {
-                              validate10.errors = [{ instancePath: instancePath + "/maxResponseBytes", schemaPath: "#/properties/maxResponseBytes/maximum", keyword: "maximum", params: { comparison: "<=", limit: 9007199254740991 }, message: "must be <= 9007199254740991" }];
-                              return false;
-                            } else {
-                              if (data9 < 0 || isNaN(data9)) {
-                                validate10.errors = [{ instancePath: instancePath + "/maxResponseBytes", schemaPath: "#/properties/maxResponseBytes/minimum", keyword: "minimum", params: { comparison: ">=", limit: 0 }, message: "must be >= 0" }];
-                                return false;
+                          if (Array.isArray(data6)) {
+                            var valid5 = true;
+                            const len0 = data6.length;
+                            for (let i0 = 0; i0 < len0; i0++) {
+                              let data7 = data6[i0];
+                              const _errs25 = errors;
+                              if (errors === _errs25) {
+                                if (Array.isArray(data7)) {
+                                  if (data7.length > 2) {
+                                    validate10.errors = [{ instancePath: instancePath + "/headers/" + i0, schemaPath: "#/properties/headers/items/maxItems", keyword: "maxItems", params: { limit: 2 }, message: "must NOT have more than 2 items" }];
+                                    return false;
+                                  } else {
+                                    if (data7.length < 2) {
+                                      validate10.errors = [{ instancePath: instancePath + "/headers/" + i0, schemaPath: "#/properties/headers/items/minItems", keyword: "minItems", params: { limit: 2 }, message: "must NOT have fewer than 2 items" }];
+                                      return false;
+                                    } else {
+                                      const len1 = data7.length;
+                                      if (len1 > 0) {
+                                        const _errs27 = errors;
+                                        if (typeof data7[0] !== "string") {
+                                          validate10.errors = [{ instancePath: instancePath + "/headers/" + i0 + "/0", schemaPath: "#/properties/headers/items/items/0/type", keyword: "type", params: { type: "string" }, message: "must be string" }];
+                                          return false;
+                                        }
+                                        var valid6 = _errs27 === errors;
+                                      }
+                                      if (valid6) {
+                                        if (len1 > 1) {
+                                          const _errs29 = errors;
+                                          if (typeof data7[1] !== "string") {
+                                            validate10.errors = [{ instancePath: instancePath + "/headers/" + i0 + "/1", schemaPath: "#/properties/headers/items/items/1/type", keyword: "type", params: { type: "string" }, message: "must be string" }];
+                                            return false;
+                                          }
+                                          var valid6 = _errs29 === errors;
+                                        }
+                                      }
+                                    }
+                                  }
+                                } else {
+                                  validate10.errors = [{ instancePath: instancePath + "/headers/" + i0, schemaPath: "#/properties/headers/items/type", keyword: "type", params: { type: "array" }, message: "must be array" }];
+                                  return false;
+                                }
+                              }
+                              var valid5 = _errs25 === errors;
+                              if (!valid5) {
+                                break;
                               }
                             }
+                          } else {
+                            validate10.errors = [{ instancePath: instancePath + "/headers", schemaPath: "#/properties/headers/type", keyword: "type", params: { type: "array" }, message: "must be array" }];
+                            return false;
                           }
                         }
                         var valid0 = _errs23 === errors;
@@ -542,73 +601,99 @@ function validate10(data, { instancePath = "", parentData, parentDataProperty, r
                         var valid0 = true;
                       }
                       if (valid0) {
-                        if (data.method !== void 0) {
-                          const _errs25 = errors;
-                          if (typeof data.method !== "string") {
-                            validate10.errors = [{ instancePath: instancePath + "/method", schemaPath: "#/properties/method/type", keyword: "type", params: { type: "string" }, message: "must be string" }];
+                        if (data.maxResponseBytes !== void 0) {
+                          let data10 = data.maxResponseBytes;
+                          const _errs31 = errors;
+                          if (!(typeof data10 == "number" && (!(data10 % 1) && !isNaN(data10)) && isFinite(data10))) {
+                            validate10.errors = [{ instancePath: instancePath + "/maxResponseBytes", schemaPath: "#/properties/maxResponseBytes/type", keyword: "type", params: { type: "integer" }, message: "must be integer" }];
                             return false;
                           }
-                          var valid0 = _errs25 === errors;
+                          if (errors === _errs31) {
+                            if (typeof data10 == "number" && isFinite(data10)) {
+                              if (data10 > 9007199254740991 || isNaN(data10)) {
+                                validate10.errors = [{ instancePath: instancePath + "/maxResponseBytes", schemaPath: "#/properties/maxResponseBytes/maximum", keyword: "maximum", params: { comparison: "<=", limit: 9007199254740991 }, message: "must be <= 9007199254740991" }];
+                                return false;
+                              } else {
+                                if (data10 < 0 || isNaN(data10)) {
+                                  validate10.errors = [{ instancePath: instancePath + "/maxResponseBytes", schemaPath: "#/properties/maxResponseBytes/minimum", keyword: "minimum", params: { comparison: ">=", limit: 0 }, message: "must be >= 0" }];
+                                  return false;
+                                }
+                              }
+                            }
+                          }
+                          var valid0 = _errs31 === errors;
                         } else {
                           var valid0 = true;
                         }
                         if (valid0) {
-                          if (data.partition !== void 0) {
-                            const _errs27 = errors;
-                            if (typeof data.partition !== "string") {
-                              validate10.errors = [{ instancePath: instancePath + "/partition", schemaPath: "#/properties/partition/type", keyword: "type", params: { type: "string" }, message: "must be string" }];
+                          if (data.method !== void 0) {
+                            const _errs33 = errors;
+                            if (typeof data.method !== "string") {
+                              validate10.errors = [{ instancePath: instancePath + "/method", schemaPath: "#/properties/method/type", keyword: "type", params: { type: "string" }, message: "must be string" }];
                               return false;
                             }
-                            var valid0 = _errs27 === errors;
+                            var valid0 = _errs33 === errors;
                           } else {
                             var valid0 = true;
                           }
                           if (valid0) {
-                            if (data.requestId !== void 0) {
-                              const _errs29 = errors;
-                              if (typeof data.requestId !== "string") {
-                                validate10.errors = [{ instancePath: instancePath + "/requestId", schemaPath: "#/properties/requestId/type", keyword: "type", params: { type: "string" }, message: "must be string" }];
+                            if (data.partition !== void 0) {
+                              const _errs35 = errors;
+                              if (typeof data.partition !== "string") {
+                                validate10.errors = [{ instancePath: instancePath + "/partition", schemaPath: "#/properties/partition/type", keyword: "type", params: { type: "string" }, message: "must be string" }];
                                 return false;
                               }
-                              var valid0 = _errs29 === errors;
+                              var valid0 = _errs35 === errors;
                             } else {
                               var valid0 = true;
                             }
                             if (valid0) {
-                              if (data.timeoutMs !== void 0) {
-                                let data13 = data.timeoutMs;
-                                const _errs31 = errors;
-                                if (!(typeof data13 == "number" && (!(data13 % 1) && !isNaN(data13)) && isFinite(data13))) {
-                                  validate10.errors = [{ instancePath: instancePath + "/timeoutMs", schemaPath: "#/properties/timeoutMs/type", keyword: "type", params: { type: "integer" }, message: "must be integer" }];
+                              if (data.requestId !== void 0) {
+                                const _errs37 = errors;
+                                if (typeof data.requestId !== "string") {
+                                  validate10.errors = [{ instancePath: instancePath + "/requestId", schemaPath: "#/properties/requestId/type", keyword: "type", params: { type: "string" }, message: "must be string" }];
                                   return false;
                                 }
-                                if (errors === _errs31) {
-                                  if (typeof data13 == "number" && isFinite(data13)) {
-                                    if (data13 > 9007199254740991 || isNaN(data13)) {
-                                      validate10.errors = [{ instancePath: instancePath + "/timeoutMs", schemaPath: "#/properties/timeoutMs/maximum", keyword: "maximum", params: { comparison: "<=", limit: 9007199254740991 }, message: "must be <= 9007199254740991" }];
-                                      return false;
-                                    } else {
-                                      if (data13 < 0 || isNaN(data13)) {
-                                        validate10.errors = [{ instancePath: instancePath + "/timeoutMs", schemaPath: "#/properties/timeoutMs/minimum", keyword: "minimum", params: { comparison: ">=", limit: 0 }, message: "must be >= 0" }];
-                                        return false;
-                                      }
-                                    }
-                                  }
-                                }
-                                var valid0 = _errs31 === errors;
+                                var valid0 = _errs37 === errors;
                               } else {
                                 var valid0 = true;
                               }
                               if (valid0) {
-                                if (data.url !== void 0) {
-                                  const _errs33 = errors;
-                                  if (typeof data.url !== "string") {
-                                    validate10.errors = [{ instancePath: instancePath + "/url", schemaPath: "#/properties/url/type", keyword: "type", params: { type: "string" }, message: "must be string" }];
+                                if (data.timeoutMs !== void 0) {
+                                  let data14 = data.timeoutMs;
+                                  const _errs39 = errors;
+                                  if (!(typeof data14 == "number" && (!(data14 % 1) && !isNaN(data14)) && isFinite(data14))) {
+                                    validate10.errors = [{ instancePath: instancePath + "/timeoutMs", schemaPath: "#/properties/timeoutMs/type", keyword: "type", params: { type: "integer" }, message: "must be integer" }];
                                     return false;
                                   }
-                                  var valid0 = _errs33 === errors;
+                                  if (errors === _errs39) {
+                                    if (typeof data14 == "number" && isFinite(data14)) {
+                                      if (data14 > 9007199254740991 || isNaN(data14)) {
+                                        validate10.errors = [{ instancePath: instancePath + "/timeoutMs", schemaPath: "#/properties/timeoutMs/maximum", keyword: "maximum", params: { comparison: "<=", limit: 9007199254740991 }, message: "must be <= 9007199254740991" }];
+                                        return false;
+                                      } else {
+                                        if (data14 < 0 || isNaN(data14)) {
+                                          validate10.errors = [{ instancePath: instancePath + "/timeoutMs", schemaPath: "#/properties/timeoutMs/minimum", keyword: "minimum", params: { comparison: ">=", limit: 0 }, message: "must be >= 0" }];
+                                          return false;
+                                        }
+                                      }
+                                    }
+                                  }
+                                  var valid0 = _errs39 === errors;
                                 } else {
                                   var valid0 = true;
+                                }
+                                if (valid0) {
+                                  if (data.url !== void 0) {
+                                    const _errs41 = errors;
+                                    if (typeof data.url !== "string") {
+                                      validate10.errors = [{ instancePath: instancePath + "/url", schemaPath: "#/properties/url/type", keyword: "type", params: { type: "string" }, message: "must be string" }];
+                                      return false;
+                                    }
+                                    var valid0 = _errs41 === errors;
+                                  } else {
+                                    var valid0 = true;
+                                  }
                                 }
                               }
                             }
@@ -632,10 +717,10 @@ function validate10(data, { instancePath = "", parentData, parentDataProperty, r
   return errors === 0;
 }
 var responseMetadata = validate13;
-var schema15 = { "$id": "https://ja3proxy.invalid/contracts/responseMetadata.schema.json", "$schema": "http://json-schema.org/draft-07/schema#", "definitions": { "Delivery": { "enum": ["not_started", "possibly_sent", "response_started"], "type": "string" }, "Diagnostics": { "properties": { "attempt": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "bodyMs": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "clientReused": { "type": ["boolean", "null"] }, "contextId": { "type": ["string", "null"] }, "cookieRevision": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "delivery": { "$ref": "#/definitions/Delivery" }, "headersMs": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "phase": { "$ref": "#/definitions/Phase" }, "queueMs": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "requestBytes": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "requestId": { "type": "string" }, "responseBytes": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "spanId": { "type": "string" }, "tlsProfile": { "type": "string" }, "totalMs": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "traceId": { "type": "string" } }, "required": ["requestId", "attempt", "traceId", "spanId", "phase", "delivery", "queueMs", "headersMs", "bodyMs", "totalMs", "requestBytes", "responseBytes", "tlsProfile"], "type": "object" }, "Phase": { "enum": ["queued", "preparing", "upstream", "body", "complete"], "type": "string" } }, "properties": { "cookieRevision": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "diagnostics": { "$ref": "#/definitions/Diagnostics" }, "headers": { "items": { "items": [{ "type": "string" }, { "type": "string" }], "maxItems": 2, "minItems": 2, "type": "array" }, "type": "array" }, "requestId": { "type": "string" }, "status": { "format": "uint16", "maximum": 65535, "minimum": 0, "type": "integer" } }, "required": ["requestId", "status", "headers", "diagnostics"], "title": "ResponseMetadata", "type": "object" };
-var schema16 = { "properties": { "attempt": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "bodyMs": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "clientReused": { "type": ["boolean", "null"] }, "contextId": { "type": ["string", "null"] }, "cookieRevision": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "delivery": { "$ref": "#/definitions/Delivery" }, "headersMs": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "phase": { "$ref": "#/definitions/Phase" }, "queueMs": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "requestBytes": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "requestId": { "type": "string" }, "responseBytes": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "spanId": { "type": "string" }, "tlsProfile": { "type": "string" }, "totalMs": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "traceId": { "type": "string" } }, "required": ["requestId", "attempt", "traceId", "spanId", "phase", "delivery", "queueMs", "headersMs", "bodyMs", "totalMs", "requestBytes", "responseBytes", "tlsProfile"], "type": "object" };
-var schema17 = { "enum": ["not_started", "possibly_sent", "response_started"], "type": "string" };
-var schema18 = { "enum": ["queued", "preparing", "upstream", "body", "complete"], "type": "string" };
+var schema16 = { "$id": "https://ja3proxy.invalid/contracts/responseMetadata.schema.json", "$schema": "http://json-schema.org/draft-07/schema#", "definitions": { "Delivery": { "enum": ["not_started", "possibly_sent", "response_started"], "type": "string" }, "Diagnostics": { "properties": { "attempt": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "bodyMs": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "clientReused": { "type": ["boolean", "null"] }, "contextId": { "type": ["string", "null"] }, "cookieRevision": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "delivery": { "$ref": "#/definitions/Delivery" }, "headersMs": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "phase": { "$ref": "#/definitions/Phase" }, "queueMs": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "requestBytes": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "requestId": { "type": "string" }, "responseBytes": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "spanId": { "type": "string" }, "tlsProfile": { "type": "string" }, "totalMs": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "traceId": { "type": "string" } }, "required": ["requestId", "attempt", "traceId", "spanId", "phase", "delivery", "queueMs", "headersMs", "bodyMs", "totalMs", "requestBytes", "responseBytes", "tlsProfile"], "type": "object" }, "Phase": { "enum": ["queued", "preparing", "upstream", "body", "complete"], "type": "string" } }, "properties": { "cookieRevision": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "diagnostics": { "$ref": "#/definitions/Diagnostics" }, "headers": { "items": { "items": [{ "type": "string" }, { "type": "string" }], "maxItems": 2, "minItems": 2, "type": "array" }, "type": "array" }, "requestId": { "type": "string" }, "status": { "format": "uint16", "maximum": 65535, "minimum": 0, "type": "integer" } }, "required": ["requestId", "status", "headers", "diagnostics"], "title": "ResponseMetadata", "type": "object" };
+var schema17 = { "properties": { "attempt": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "bodyMs": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "clientReused": { "type": ["boolean", "null"] }, "contextId": { "type": ["string", "null"] }, "cookieRevision": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "delivery": { "$ref": "#/definitions/Delivery" }, "headersMs": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "phase": { "$ref": "#/definitions/Phase" }, "queueMs": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "requestBytes": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "requestId": { "type": "string" }, "responseBytes": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "spanId": { "type": "string" }, "tlsProfile": { "type": "string" }, "totalMs": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "traceId": { "type": "string" } }, "required": ["requestId", "attempt", "traceId", "spanId", "phase", "delivery", "queueMs", "headersMs", "bodyMs", "totalMs", "requestBytes", "responseBytes", "tlsProfile"], "type": "object" };
+var schema18 = { "enum": ["not_started", "possibly_sent", "response_started"], "type": "string" };
+var schema19 = { "enum": ["queued", "preparing", "upstream", "body", "complete"], "type": "string" };
 function validate14(data, { instancePath = "", parentData, parentDataProperty, rootData = data } = {}) {
   let vErrors = null;
   let errors = 0;
@@ -675,7 +760,7 @@ function validate14(data, { instancePath = "", parentData, parentDataProperty, r
             let data1 = data.bodyMs;
             const _errs3 = errors;
             if (!(typeof data1 == "number" && (!(data1 % 1) && !isNaN(data1)) && isFinite(data1)) && data1 !== null) {
-              validate14.errors = [{ instancePath: instancePath + "/bodyMs", schemaPath: "#/properties/bodyMs/type", keyword: "type", params: { type: schema16.properties.bodyMs.type }, message: "must be integer,null" }];
+              validate14.errors = [{ instancePath: instancePath + "/bodyMs", schemaPath: "#/properties/bodyMs/type", keyword: "type", params: { type: schema17.properties.bodyMs.type }, message: "must be integer,null" }];
               return false;
             }
             if (errors === _errs3) {
@@ -700,7 +785,7 @@ function validate14(data, { instancePath = "", parentData, parentDataProperty, r
               let data2 = data.clientReused;
               const _errs5 = errors;
               if (typeof data2 !== "boolean" && data2 !== null) {
-                validate14.errors = [{ instancePath: instancePath + "/clientReused", schemaPath: "#/properties/clientReused/type", keyword: "type", params: { type: schema16.properties.clientReused.type }, message: "must be boolean,null" }];
+                validate14.errors = [{ instancePath: instancePath + "/clientReused", schemaPath: "#/properties/clientReused/type", keyword: "type", params: { type: schema17.properties.clientReused.type }, message: "must be boolean,null" }];
                 return false;
               }
               var valid0 = _errs5 === errors;
@@ -712,7 +797,7 @@ function validate14(data, { instancePath = "", parentData, parentDataProperty, r
                 let data3 = data.contextId;
                 const _errs7 = errors;
                 if (typeof data3 !== "string" && data3 !== null) {
-                  validate14.errors = [{ instancePath: instancePath + "/contextId", schemaPath: "#/properties/contextId/type", keyword: "type", params: { type: schema16.properties.contextId.type }, message: "must be string,null" }];
+                  validate14.errors = [{ instancePath: instancePath + "/contextId", schemaPath: "#/properties/contextId/type", keyword: "type", params: { type: schema17.properties.contextId.type }, message: "must be string,null" }];
                   return false;
                 }
                 var valid0 = _errs7 === errors;
@@ -724,7 +809,7 @@ function validate14(data, { instancePath = "", parentData, parentDataProperty, r
                   let data4 = data.cookieRevision;
                   const _errs9 = errors;
                   if (!(typeof data4 == "number" && (!(data4 % 1) && !isNaN(data4)) && isFinite(data4)) && data4 !== null) {
-                    validate14.errors = [{ instancePath: instancePath + "/cookieRevision", schemaPath: "#/properties/cookieRevision/type", keyword: "type", params: { type: schema16.properties.cookieRevision.type }, message: "must be integer,null" }];
+                    validate14.errors = [{ instancePath: instancePath + "/cookieRevision", schemaPath: "#/properties/cookieRevision/type", keyword: "type", params: { type: schema17.properties.cookieRevision.type }, message: "must be integer,null" }];
                     return false;
                   }
                   if (errors === _errs9) {
@@ -753,7 +838,7 @@ function validate14(data, { instancePath = "", parentData, parentDataProperty, r
                       return false;
                     }
                     if (!(data5 === "not_started" || data5 === "possibly_sent" || data5 === "response_started")) {
-                      validate14.errors = [{ instancePath: instancePath + "/delivery", schemaPath: "#/definitions/Delivery/enum", keyword: "enum", params: { allowedValues: schema17.enum }, message: "must be equal to one of the allowed values" }];
+                      validate14.errors = [{ instancePath: instancePath + "/delivery", schemaPath: "#/definitions/Delivery/enum", keyword: "enum", params: { allowedValues: schema18.enum }, message: "must be equal to one of the allowed values" }];
                       return false;
                     }
                     var valid0 = _errs11 === errors;
@@ -765,7 +850,7 @@ function validate14(data, { instancePath = "", parentData, parentDataProperty, r
                       let data6 = data.headersMs;
                       const _errs14 = errors;
                       if (!(typeof data6 == "number" && (!(data6 % 1) && !isNaN(data6)) && isFinite(data6)) && data6 !== null) {
-                        validate14.errors = [{ instancePath: instancePath + "/headersMs", schemaPath: "#/properties/headersMs/type", keyword: "type", params: { type: schema16.properties.headersMs.type }, message: "must be integer,null" }];
+                        validate14.errors = [{ instancePath: instancePath + "/headersMs", schemaPath: "#/properties/headersMs/type", keyword: "type", params: { type: schema17.properties.headersMs.type }, message: "must be integer,null" }];
                         return false;
                       }
                       if (errors === _errs14) {
@@ -794,7 +879,7 @@ function validate14(data, { instancePath = "", parentData, parentDataProperty, r
                           return false;
                         }
                         if (!(data7 === "queued" || data7 === "preparing" || data7 === "upstream" || data7 === "body" || data7 === "complete")) {
-                          validate14.errors = [{ instancePath: instancePath + "/phase", schemaPath: "#/definitions/Phase/enum", keyword: "enum", params: { allowedValues: schema18.enum }, message: "must be equal to one of the allowed values" }];
+                          validate14.errors = [{ instancePath: instancePath + "/phase", schemaPath: "#/definitions/Phase/enum", keyword: "enum", params: { allowedValues: schema19.enum }, message: "must be equal to one of the allowed values" }];
                           return false;
                         }
                         var valid0 = _errs16 === errors;
@@ -984,7 +1069,7 @@ function validate13(data, { instancePath = "", parentData, parentDataProperty, r
           let data0 = data.cookieRevision;
           const _errs1 = errors;
           if (!(typeof data0 == "number" && (!(data0 % 1) && !isNaN(data0)) && isFinite(data0)) && data0 !== null) {
-            validate13.errors = [{ instancePath: instancePath + "/cookieRevision", schemaPath: "#/properties/cookieRevision/type", keyword: "type", params: { type: schema15.properties.cookieRevision.type }, message: "must be integer,null" }];
+            validate13.errors = [{ instancePath: instancePath + "/cookieRevision", schemaPath: "#/properties/cookieRevision/type", keyword: "type", params: { type: schema16.properties.cookieRevision.type }, message: "must be integer,null" }];
             return false;
           }
           if (errors === _errs1) {
@@ -1126,9 +1211,9 @@ function validate13(data, { instancePath = "", parentData, parentDataProperty, r
   return errors === 0;
 }
 var diagnostics = validate16;
-var schema19 = { "$id": "https://ja3proxy.invalid/contracts/diagnostics.schema.json", "$schema": "http://json-schema.org/draft-07/schema#", "definitions": { "Delivery": { "enum": ["not_started", "possibly_sent", "response_started"], "type": "string" }, "Phase": { "enum": ["queued", "preparing", "upstream", "body", "complete"], "type": "string" } }, "properties": { "attempt": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "bodyMs": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "clientReused": { "type": ["boolean", "null"] }, "contextId": { "type": ["string", "null"] }, "cookieRevision": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "delivery": { "$ref": "#/definitions/Delivery" }, "headersMs": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "phase": { "$ref": "#/definitions/Phase" }, "queueMs": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "requestBytes": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "requestId": { "type": "string" }, "responseBytes": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "spanId": { "type": "string" }, "tlsProfile": { "type": "string" }, "totalMs": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "traceId": { "type": "string" } }, "required": ["requestId", "attempt", "traceId", "spanId", "phase", "delivery", "queueMs", "headersMs", "bodyMs", "totalMs", "requestBytes", "responseBytes", "tlsProfile"], "title": "Diagnostics", "type": "object" };
-var schema20 = { "enum": ["not_started", "possibly_sent", "response_started"], "type": "string" };
-var schema21 = { "enum": ["queued", "preparing", "upstream", "body", "complete"], "type": "string" };
+var schema20 = { "$id": "https://ja3proxy.invalid/contracts/diagnostics.schema.json", "$schema": "http://json-schema.org/draft-07/schema#", "definitions": { "Delivery": { "enum": ["not_started", "possibly_sent", "response_started"], "type": "string" }, "Phase": { "enum": ["queued", "preparing", "upstream", "body", "complete"], "type": "string" } }, "properties": { "attempt": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "bodyMs": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "clientReused": { "type": ["boolean", "null"] }, "contextId": { "type": ["string", "null"] }, "cookieRevision": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "delivery": { "$ref": "#/definitions/Delivery" }, "headersMs": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "phase": { "$ref": "#/definitions/Phase" }, "queueMs": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "requestBytes": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "requestId": { "type": "string" }, "responseBytes": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "spanId": { "type": "string" }, "tlsProfile": { "type": "string" }, "totalMs": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "traceId": { "type": "string" } }, "required": ["requestId", "attempt", "traceId", "spanId", "phase", "delivery", "queueMs", "headersMs", "bodyMs", "totalMs", "requestBytes", "responseBytes", "tlsProfile"], "title": "Diagnostics", "type": "object" };
+var schema21 = { "enum": ["not_started", "possibly_sent", "response_started"], "type": "string" };
+var schema22 = { "enum": ["queued", "preparing", "upstream", "body", "complete"], "type": "string" };
 function validate16(data, { instancePath = "", parentData, parentDataProperty, rootData = data } = {}) {
   ;
   let vErrors = null;
@@ -1169,7 +1254,7 @@ function validate16(data, { instancePath = "", parentData, parentDataProperty, r
             let data1 = data.bodyMs;
             const _errs3 = errors;
             if (!(typeof data1 == "number" && (!(data1 % 1) && !isNaN(data1)) && isFinite(data1)) && data1 !== null) {
-              validate16.errors = [{ instancePath: instancePath + "/bodyMs", schemaPath: "#/properties/bodyMs/type", keyword: "type", params: { type: schema19.properties.bodyMs.type }, message: "must be integer,null" }];
+              validate16.errors = [{ instancePath: instancePath + "/bodyMs", schemaPath: "#/properties/bodyMs/type", keyword: "type", params: { type: schema20.properties.bodyMs.type }, message: "must be integer,null" }];
               return false;
             }
             if (errors === _errs3) {
@@ -1194,7 +1279,7 @@ function validate16(data, { instancePath = "", parentData, parentDataProperty, r
               let data2 = data.clientReused;
               const _errs5 = errors;
               if (typeof data2 !== "boolean" && data2 !== null) {
-                validate16.errors = [{ instancePath: instancePath + "/clientReused", schemaPath: "#/properties/clientReused/type", keyword: "type", params: { type: schema19.properties.clientReused.type }, message: "must be boolean,null" }];
+                validate16.errors = [{ instancePath: instancePath + "/clientReused", schemaPath: "#/properties/clientReused/type", keyword: "type", params: { type: schema20.properties.clientReused.type }, message: "must be boolean,null" }];
                 return false;
               }
               var valid0 = _errs5 === errors;
@@ -1206,7 +1291,7 @@ function validate16(data, { instancePath = "", parentData, parentDataProperty, r
                 let data3 = data.contextId;
                 const _errs7 = errors;
                 if (typeof data3 !== "string" && data3 !== null) {
-                  validate16.errors = [{ instancePath: instancePath + "/contextId", schemaPath: "#/properties/contextId/type", keyword: "type", params: { type: schema19.properties.contextId.type }, message: "must be string,null" }];
+                  validate16.errors = [{ instancePath: instancePath + "/contextId", schemaPath: "#/properties/contextId/type", keyword: "type", params: { type: schema20.properties.contextId.type }, message: "must be string,null" }];
                   return false;
                 }
                 var valid0 = _errs7 === errors;
@@ -1218,7 +1303,7 @@ function validate16(data, { instancePath = "", parentData, parentDataProperty, r
                   let data4 = data.cookieRevision;
                   const _errs9 = errors;
                   if (!(typeof data4 == "number" && (!(data4 % 1) && !isNaN(data4)) && isFinite(data4)) && data4 !== null) {
-                    validate16.errors = [{ instancePath: instancePath + "/cookieRevision", schemaPath: "#/properties/cookieRevision/type", keyword: "type", params: { type: schema19.properties.cookieRevision.type }, message: "must be integer,null" }];
+                    validate16.errors = [{ instancePath: instancePath + "/cookieRevision", schemaPath: "#/properties/cookieRevision/type", keyword: "type", params: { type: schema20.properties.cookieRevision.type }, message: "must be integer,null" }];
                     return false;
                   }
                   if (errors === _errs9) {
@@ -1247,7 +1332,7 @@ function validate16(data, { instancePath = "", parentData, parentDataProperty, r
                       return false;
                     }
                     if (!(data5 === "not_started" || data5 === "possibly_sent" || data5 === "response_started")) {
-                      validate16.errors = [{ instancePath: instancePath + "/delivery", schemaPath: "#/definitions/Delivery/enum", keyword: "enum", params: { allowedValues: schema20.enum }, message: "must be equal to one of the allowed values" }];
+                      validate16.errors = [{ instancePath: instancePath + "/delivery", schemaPath: "#/definitions/Delivery/enum", keyword: "enum", params: { allowedValues: schema21.enum }, message: "must be equal to one of the allowed values" }];
                       return false;
                     }
                     var valid0 = _errs11 === errors;
@@ -1259,7 +1344,7 @@ function validate16(data, { instancePath = "", parentData, parentDataProperty, r
                       let data6 = data.headersMs;
                       const _errs14 = errors;
                       if (!(typeof data6 == "number" && (!(data6 % 1) && !isNaN(data6)) && isFinite(data6)) && data6 !== null) {
-                        validate16.errors = [{ instancePath: instancePath + "/headersMs", schemaPath: "#/properties/headersMs/type", keyword: "type", params: { type: schema19.properties.headersMs.type }, message: "must be integer,null" }];
+                        validate16.errors = [{ instancePath: instancePath + "/headersMs", schemaPath: "#/properties/headersMs/type", keyword: "type", params: { type: schema20.properties.headersMs.type }, message: "must be integer,null" }];
                         return false;
                       }
                       if (errors === _errs14) {
@@ -1288,7 +1373,7 @@ function validate16(data, { instancePath = "", parentData, parentDataProperty, r
                           return false;
                         }
                         if (!(data7 === "queued" || data7 === "preparing" || data7 === "upstream" || data7 === "body" || data7 === "complete")) {
-                          validate16.errors = [{ instancePath: instancePath + "/phase", schemaPath: "#/definitions/Phase/enum", keyword: "enum", params: { allowedValues: schema21.enum }, message: "must be equal to one of the allowed values" }];
+                          validate16.errors = [{ instancePath: instancePath + "/phase", schemaPath: "#/definitions/Phase/enum", keyword: "enum", params: { allowedValues: schema22.enum }, message: "must be equal to one of the allowed values" }];
                           return false;
                         }
                         var valid0 = _errs16 === errors;
@@ -1464,10 +1549,10 @@ function validate16(data, { instancePath = "", parentData, parentDataProperty, r
   return errors === 0;
 }
 var transportError = validate17;
-var schema23 = { "enum": ["UNAUTHORIZED", "INVALID_REQUEST", "UNSUPPORTED_CAPABILITY", "INVALID_PROFILE", "EGRESS_REQUIRED", "SSRF_BLOCKED", "BODY_TOO_LARGE", "BUSY", "TIMEOUT", "CANCELLED", "DNS_ERROR", "PROXY_ERROR", "TLS_ERROR", "CONNECT_ERROR", "PROTOCOL_ERROR", "CONTEXT_NOT_FOUND", "CONTEXT_CONFLICT", "CONTEXT_LIMIT", "COOKIE_LIMIT", "DUPLICATE_REQUEST", "UNKNOWN"], "type": "string" };
-var schema24 = { "properties": { "attempt": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "bodyMs": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "clientReused": { "type": ["boolean", "null"] }, "contextId": { "type": ["string", "null"] }, "cookieRevision": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "delivery": { "$ref": "#/definitions/Delivery" }, "headersMs": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "phase": { "$ref": "#/definitions/Phase" }, "queueMs": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "requestBytes": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "requestId": { "type": "string" }, "responseBytes": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "spanId": { "type": "string" }, "tlsProfile": { "type": "string" }, "totalMs": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "traceId": { "type": "string" } }, "required": ["requestId", "attempt", "traceId", "spanId", "phase", "delivery", "queueMs", "headersMs", "bodyMs", "totalMs", "requestBytes", "responseBytes", "tlsProfile"], "type": "object" };
-var schema25 = { "enum": ["not_started", "possibly_sent", "response_started"], "type": "string" };
-var schema26 = { "enum": ["queued", "preparing", "upstream", "body", "complete"], "type": "string" };
+var schema24 = { "enum": ["UNAUTHORIZED", "INVALID_REQUEST", "UNSUPPORTED_CAPABILITY", "INVALID_PROFILE", "EGRESS_REQUIRED", "SSRF_BLOCKED", "BODY_TOO_LARGE", "BUSY", "TIMEOUT", "CANCELLED", "DNS_ERROR", "PROXY_ERROR", "TLS_ERROR", "CONNECT_ERROR", "PROTOCOL_ERROR", "CONTEXT_NOT_FOUND", "CONTEXT_CONFLICT", "CONTEXT_LIMIT", "COOKIE_LIMIT", "DUPLICATE_REQUEST", "UNKNOWN"], "type": "string" };
+var schema25 = { "properties": { "attempt": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "bodyMs": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "clientReused": { "type": ["boolean", "null"] }, "contextId": { "type": ["string", "null"] }, "cookieRevision": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "delivery": { "$ref": "#/definitions/Delivery" }, "headersMs": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "phase": { "$ref": "#/definitions/Phase" }, "queueMs": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "requestBytes": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "requestId": { "type": "string" }, "responseBytes": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "spanId": { "type": "string" }, "tlsProfile": { "type": "string" }, "totalMs": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "traceId": { "type": "string" } }, "required": ["requestId", "attempt", "traceId", "spanId", "phase", "delivery", "queueMs", "headersMs", "bodyMs", "totalMs", "requestBytes", "responseBytes", "tlsProfile"], "type": "object" };
+var schema26 = { "enum": ["not_started", "possibly_sent", "response_started"], "type": "string" };
+var schema27 = { "enum": ["queued", "preparing", "upstream", "body", "complete"], "type": "string" };
 function validate18(data, { instancePath = "", parentData, parentDataProperty, rootData = data } = {}) {
   let vErrors = null;
   let errors = 0;
@@ -1507,7 +1592,7 @@ function validate18(data, { instancePath = "", parentData, parentDataProperty, r
             let data1 = data.bodyMs;
             const _errs3 = errors;
             if (!(typeof data1 == "number" && (!(data1 % 1) && !isNaN(data1)) && isFinite(data1)) && data1 !== null) {
-              validate18.errors = [{ instancePath: instancePath + "/bodyMs", schemaPath: "#/properties/bodyMs/type", keyword: "type", params: { type: schema24.properties.bodyMs.type }, message: "must be integer,null" }];
+              validate18.errors = [{ instancePath: instancePath + "/bodyMs", schemaPath: "#/properties/bodyMs/type", keyword: "type", params: { type: schema25.properties.bodyMs.type }, message: "must be integer,null" }];
               return false;
             }
             if (errors === _errs3) {
@@ -1532,7 +1617,7 @@ function validate18(data, { instancePath = "", parentData, parentDataProperty, r
               let data2 = data.clientReused;
               const _errs5 = errors;
               if (typeof data2 !== "boolean" && data2 !== null) {
-                validate18.errors = [{ instancePath: instancePath + "/clientReused", schemaPath: "#/properties/clientReused/type", keyword: "type", params: { type: schema24.properties.clientReused.type }, message: "must be boolean,null" }];
+                validate18.errors = [{ instancePath: instancePath + "/clientReused", schemaPath: "#/properties/clientReused/type", keyword: "type", params: { type: schema25.properties.clientReused.type }, message: "must be boolean,null" }];
                 return false;
               }
               var valid0 = _errs5 === errors;
@@ -1544,7 +1629,7 @@ function validate18(data, { instancePath = "", parentData, parentDataProperty, r
                 let data3 = data.contextId;
                 const _errs7 = errors;
                 if (typeof data3 !== "string" && data3 !== null) {
-                  validate18.errors = [{ instancePath: instancePath + "/contextId", schemaPath: "#/properties/contextId/type", keyword: "type", params: { type: schema24.properties.contextId.type }, message: "must be string,null" }];
+                  validate18.errors = [{ instancePath: instancePath + "/contextId", schemaPath: "#/properties/contextId/type", keyword: "type", params: { type: schema25.properties.contextId.type }, message: "must be string,null" }];
                   return false;
                 }
                 var valid0 = _errs7 === errors;
@@ -1556,7 +1641,7 @@ function validate18(data, { instancePath = "", parentData, parentDataProperty, r
                   let data4 = data.cookieRevision;
                   const _errs9 = errors;
                   if (!(typeof data4 == "number" && (!(data4 % 1) && !isNaN(data4)) && isFinite(data4)) && data4 !== null) {
-                    validate18.errors = [{ instancePath: instancePath + "/cookieRevision", schemaPath: "#/properties/cookieRevision/type", keyword: "type", params: { type: schema24.properties.cookieRevision.type }, message: "must be integer,null" }];
+                    validate18.errors = [{ instancePath: instancePath + "/cookieRevision", schemaPath: "#/properties/cookieRevision/type", keyword: "type", params: { type: schema25.properties.cookieRevision.type }, message: "must be integer,null" }];
                     return false;
                   }
                   if (errors === _errs9) {
@@ -1585,7 +1670,7 @@ function validate18(data, { instancePath = "", parentData, parentDataProperty, r
                       return false;
                     }
                     if (!(data5 === "not_started" || data5 === "possibly_sent" || data5 === "response_started")) {
-                      validate18.errors = [{ instancePath: instancePath + "/delivery", schemaPath: "#/definitions/Delivery/enum", keyword: "enum", params: { allowedValues: schema25.enum }, message: "must be equal to one of the allowed values" }];
+                      validate18.errors = [{ instancePath: instancePath + "/delivery", schemaPath: "#/definitions/Delivery/enum", keyword: "enum", params: { allowedValues: schema26.enum }, message: "must be equal to one of the allowed values" }];
                       return false;
                     }
                     var valid0 = _errs11 === errors;
@@ -1597,7 +1682,7 @@ function validate18(data, { instancePath = "", parentData, parentDataProperty, r
                       let data6 = data.headersMs;
                       const _errs14 = errors;
                       if (!(typeof data6 == "number" && (!(data6 % 1) && !isNaN(data6)) && isFinite(data6)) && data6 !== null) {
-                        validate18.errors = [{ instancePath: instancePath + "/headersMs", schemaPath: "#/properties/headersMs/type", keyword: "type", params: { type: schema24.properties.headersMs.type }, message: "must be integer,null" }];
+                        validate18.errors = [{ instancePath: instancePath + "/headersMs", schemaPath: "#/properties/headersMs/type", keyword: "type", params: { type: schema25.properties.headersMs.type }, message: "must be integer,null" }];
                         return false;
                       }
                       if (errors === _errs14) {
@@ -1626,7 +1711,7 @@ function validate18(data, { instancePath = "", parentData, parentDataProperty, r
                           return false;
                         }
                         if (!(data7 === "queued" || data7 === "preparing" || data7 === "upstream" || data7 === "body" || data7 === "complete")) {
-                          validate18.errors = [{ instancePath: instancePath + "/phase", schemaPath: "#/definitions/Phase/enum", keyword: "enum", params: { allowedValues: schema26.enum }, message: "must be equal to one of the allowed values" }];
+                          validate18.errors = [{ instancePath: instancePath + "/phase", schemaPath: "#/definitions/Phase/enum", keyword: "enum", params: { allowedValues: schema27.enum }, message: "must be equal to one of the allowed values" }];
                           return false;
                         }
                         var valid0 = _errs16 === errors;
@@ -1820,7 +1905,7 @@ function validate17(data, { instancePath = "", parentData, parentDataProperty, r
             return false;
           }
           if (!(data0 === "UNAUTHORIZED" || data0 === "INVALID_REQUEST" || data0 === "UNSUPPORTED_CAPABILITY" || data0 === "INVALID_PROFILE" || data0 === "EGRESS_REQUIRED" || data0 === "SSRF_BLOCKED" || data0 === "BODY_TOO_LARGE" || data0 === "BUSY" || data0 === "TIMEOUT" || data0 === "CANCELLED" || data0 === "DNS_ERROR" || data0 === "PROXY_ERROR" || data0 === "TLS_ERROR" || data0 === "CONNECT_ERROR" || data0 === "PROTOCOL_ERROR" || data0 === "CONTEXT_NOT_FOUND" || data0 === "CONTEXT_CONFLICT" || data0 === "CONTEXT_LIMIT" || data0 === "COOKIE_LIMIT" || data0 === "DUPLICATE_REQUEST" || data0 === "UNKNOWN")) {
-            validate17.errors = [{ instancePath: instancePath + "/code", schemaPath: "#/definitions/ErrorCode/enum", keyword: "enum", params: { allowedValues: schema23.enum }, message: "must be equal to one of the allowed values" }];
+            validate17.errors = [{ instancePath: instancePath + "/code", schemaPath: "#/definitions/ErrorCode/enum", keyword: "enum", params: { allowedValues: schema24.enum }, message: "must be equal to one of the allowed values" }];
             return false;
           }
           var valid0 = _errs1 === errors;
@@ -1901,8 +1986,8 @@ function validate17(data, { instancePath = "", parentData, parentDataProperty, r
   return errors === 0;
 }
 var contextInfo = validate20;
-var schema28 = { "enum": ["external", "managed"], "type": "string" };
-var schema29 = { "additionalProperties": false, "properties": { "emulateHeaders": { "type": "boolean" }, "tlsProfile": { "type": "string" }, "userAgent": { "type": ["string", "null"] } }, "required": ["tlsProfile", "emulateHeaders"], "type": "object" };
+var schema29 = { "enum": ["external", "managed"], "type": "string" };
+var schema30 = { "additionalProperties": false, "properties": { "emulateHeaders": { "type": "boolean" }, "tlsProfile": { "type": "string" }, "userAgent": { "type": ["string", "null"] } }, "required": ["tlsProfile", "emulateHeaders"], "type": "object" };
 function validate20(data, { instancePath = "", parentData, parentDataProperty, rootData = data } = {}) {
   ;
   let vErrors = null;
@@ -1933,7 +2018,7 @@ function validate20(data, { instancePath = "", parentData, parentDataProperty, r
               return false;
             }
             if (!(data1 === "external" || data1 === "managed")) {
-              validate20.errors = [{ instancePath: instancePath + "/cookieMode", schemaPath: "#/definitions/CookieMode/enum", keyword: "enum", params: { allowedValues: schema28.enum }, message: "must be equal to one of the allowed values" }];
+              validate20.errors = [{ instancePath: instancePath + "/cookieMode", schemaPath: "#/definitions/CookieMode/enum", keyword: "enum", params: { allowedValues: schema29.enum }, message: "must be equal to one of the allowed values" }];
               return false;
             }
             var valid0 = _errs3 === errors;
@@ -2012,7 +2097,7 @@ function validate20(data, { instancePath = "", parentData, parentDataProperty, r
                               let data6 = data3.userAgent;
                               const _errs16 = errors;
                               if (typeof data6 !== "string" && data6 !== null) {
-                                validate20.errors = [{ instancePath: instancePath + "/identity/userAgent", schemaPath: "#/definitions/BrowserIdentity/properties/userAgent/type", keyword: "type", params: { type: schema29.properties.userAgent.type }, message: "must be string,null" }];
+                                validate20.errors = [{ instancePath: instancePath + "/identity/userAgent", schemaPath: "#/definitions/BrowserIdentity/properties/userAgent/type", keyword: "type", params: { type: schema30.properties.userAgent.type }, message: "must be string,null" }];
                                 return false;
                               }
                               var valid3 = _errs16 === errors;
@@ -2083,8 +2168,8 @@ function validate20(data, { instancePath = "", parentData, parentDataProperty, r
   return errors === 0;
 }
 var cookieRecord = validate21;
-var schema30 = { "$id": "https://ja3proxy.invalid/contracts/cookieRecord.schema.json", "$schema": "http://json-schema.org/draft-07/schema#", "additionalProperties": false, "definitions": { "CookieSameSite": { "enum": ["Strict", "Lax", "None"], "type": "string" } }, "properties": { "domain": { "type": "string" }, "expiresAtMs": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "hostOnly": { "type": "boolean" }, "httpOnly": { "type": "boolean" }, "name": { "type": "string" }, "partitioned": { "type": "boolean" }, "path": { "type": "string" }, "sameSite": { "anyOf": [{ "$ref": "#/definitions/CookieSameSite" }, { "type": "null" }] }, "secure": { "type": "boolean" }, "value": { "type": "string" } }, "required": ["name", "value", "domain", "path", "secure", "httpOnly", "hostOnly", "partitioned"], "title": "CookieRecord", "type": "object" };
-var schema31 = { "enum": ["Strict", "Lax", "None"], "type": "string" };
+var schema31 = { "$id": "https://ja3proxy.invalid/contracts/cookieRecord.schema.json", "$schema": "http://json-schema.org/draft-07/schema#", "additionalProperties": false, "definitions": { "CookieSameSite": { "enum": ["Strict", "Lax", "None"], "type": "string" } }, "properties": { "domain": { "type": "string" }, "expiresAtMs": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "hostOnly": { "type": "boolean" }, "httpOnly": { "type": "boolean" }, "name": { "type": "string" }, "partitioned": { "type": "boolean" }, "path": { "type": "string" }, "sameSite": { "anyOf": [{ "$ref": "#/definitions/CookieSameSite" }, { "type": "null" }] }, "secure": { "type": "boolean" }, "value": { "type": "string" } }, "required": ["name", "value", "domain", "path", "secure", "httpOnly", "hostOnly", "partitioned"], "title": "CookieRecord", "type": "object" };
+var schema32 = { "enum": ["Strict", "Lax", "None"], "type": "string" };
 function validate21(data, { instancePath = "", parentData, parentDataProperty, rootData = data } = {}) {
   ;
   let vErrors = null;
@@ -2098,7 +2183,7 @@ function validate21(data, { instancePath = "", parentData, parentDataProperty, r
       } else {
         const _errs1 = errors;
         for (const key0 in data) {
-          if (!func2.call(schema30.properties, key0)) {
+          if (!func2.call(schema31.properties, key0)) {
             validate21.errors = [{ instancePath, schemaPath: "#/additionalProperties", keyword: "additionalProperties", params: { additionalProperty: key0 }, message: "must NOT have additional properties" }];
             return false;
             break;
@@ -2120,7 +2205,7 @@ function validate21(data, { instancePath = "", parentData, parentDataProperty, r
               let data1 = data.expiresAtMs;
               const _errs4 = errors;
               if (!(typeof data1 == "number" && (!(data1 % 1) && !isNaN(data1)) && isFinite(data1)) && data1 !== null) {
-                validate21.errors = [{ instancePath: instancePath + "/expiresAtMs", schemaPath: "#/properties/expiresAtMs/type", keyword: "type", params: { type: schema30.properties.expiresAtMs.type }, message: "must be integer,null" }];
+                validate21.errors = [{ instancePath: instancePath + "/expiresAtMs", schemaPath: "#/properties/expiresAtMs/type", keyword: "type", params: { type: schema31.properties.expiresAtMs.type }, message: "must be integer,null" }];
                 return false;
               }
               if (errors === _errs4) {
@@ -2212,7 +2297,7 @@ function validate21(data, { instancePath = "", parentData, parentDataProperty, r
                             errors++;
                           }
                           if (!(data7 === "Strict" || data7 === "Lax" || data7 === "None")) {
-                            const err1 = { instancePath: instancePath + "/sameSite", schemaPath: "#/definitions/CookieSameSite/enum", keyword: "enum", params: { allowedValues: schema31.enum }, message: "must be equal to one of the allowed values" };
+                            const err1 = { instancePath: instancePath + "/sameSite", schemaPath: "#/definitions/CookieSameSite/enum", keyword: "enum", params: { allowedValues: schema32.enum }, message: "must be equal to one of the allowed values" };
                             if (vErrors === null) {
                               vErrors = [err1];
                             } else {
@@ -2302,8 +2387,8 @@ function validate21(data, { instancePath = "", parentData, parentDataProperty, r
   return errors === 0;
 }
 var cookieSnapshot = validate22;
-var schema33 = { "additionalProperties": false, "properties": { "domain": { "type": "string" }, "expiresAtMs": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "hostOnly": { "type": "boolean" }, "httpOnly": { "type": "boolean" }, "name": { "type": "string" }, "partitioned": { "type": "boolean" }, "path": { "type": "string" }, "sameSite": { "anyOf": [{ "$ref": "#/definitions/CookieSameSite" }, { "type": "null" }] }, "secure": { "type": "boolean" }, "value": { "type": "string" } }, "required": ["name", "value", "domain", "path", "secure", "httpOnly", "hostOnly", "partitioned"], "type": "object" };
-var schema34 = { "enum": ["Strict", "Lax", "None"], "type": "string" };
+var schema34 = { "additionalProperties": false, "properties": { "domain": { "type": "string" }, "expiresAtMs": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "hostOnly": { "type": "boolean" }, "httpOnly": { "type": "boolean" }, "name": { "type": "string" }, "partitioned": { "type": "boolean" }, "path": { "type": "string" }, "sameSite": { "anyOf": [{ "$ref": "#/definitions/CookieSameSite" }, { "type": "null" }] }, "secure": { "type": "boolean" }, "value": { "type": "string" } }, "required": ["name", "value", "domain", "path", "secure", "httpOnly", "hostOnly", "partitioned"], "type": "object" };
+var schema35 = { "enum": ["Strict", "Lax", "None"], "type": "string" };
 function validate23(data, { instancePath = "", parentData, parentDataProperty, rootData = data } = {}) {
   let vErrors = null;
   let errors = 0;
@@ -2316,7 +2401,7 @@ function validate23(data, { instancePath = "", parentData, parentDataProperty, r
       } else {
         const _errs1 = errors;
         for (const key0 in data) {
-          if (!func2.call(schema33.properties, key0)) {
+          if (!func2.call(schema34.properties, key0)) {
             validate23.errors = [{ instancePath, schemaPath: "#/additionalProperties", keyword: "additionalProperties", params: { additionalProperty: key0 }, message: "must NOT have additional properties" }];
             return false;
             break;
@@ -2338,7 +2423,7 @@ function validate23(data, { instancePath = "", parentData, parentDataProperty, r
               let data1 = data.expiresAtMs;
               const _errs4 = errors;
               if (!(typeof data1 == "number" && (!(data1 % 1) && !isNaN(data1)) && isFinite(data1)) && data1 !== null) {
-                validate23.errors = [{ instancePath: instancePath + "/expiresAtMs", schemaPath: "#/properties/expiresAtMs/type", keyword: "type", params: { type: schema33.properties.expiresAtMs.type }, message: "must be integer,null" }];
+                validate23.errors = [{ instancePath: instancePath + "/expiresAtMs", schemaPath: "#/properties/expiresAtMs/type", keyword: "type", params: { type: schema34.properties.expiresAtMs.type }, message: "must be integer,null" }];
                 return false;
               }
               if (errors === _errs4) {
@@ -2430,7 +2515,7 @@ function validate23(data, { instancePath = "", parentData, parentDataProperty, r
                             errors++;
                           }
                           if (!(data7 === "Strict" || data7 === "Lax" || data7 === "None")) {
-                            const err1 = { instancePath: instancePath + "/sameSite", schemaPath: "#/definitions/CookieSameSite/enum", keyword: "enum", params: { allowedValues: schema34.enum }, message: "must be equal to one of the allowed values" };
+                            const err1 = { instancePath: instancePath + "/sameSite", schemaPath: "#/definitions/CookieSameSite/enum", keyword: "enum", params: { allowedValues: schema35.enum }, message: "must be equal to one of the allowed values" };
                             if (vErrors === null) {
                               vErrors = [err1];
                             } else {
@@ -2589,7 +2674,7 @@ function validate22(data, { instancePath = "", parentData, parentDataProperty, r
   return errors === 0;
 }
 var capabilities = validate25;
-var schema40 = { "enum": ["ja3proxy"], "type": "string" };
+var schema41 = { "enum": ["ja3proxy"], "type": "string" };
 function validate25(data, { instancePath = "", parentData, parentDataProperty, rootData = data } = {}) {
   ;
   let vErrors = null;
@@ -3649,7 +3734,7 @@ function validate25(data, { instancePath = "", parentData, parentDataProperty, r
                           return false;
                         }
                         if (!(data50 === "ja3proxy")) {
-                          validate25.errors = [{ instancePath: instancePath + "/service", schemaPath: "#/definitions/ServiceName/enum", keyword: "enum", params: { allowedValues: schema40.enum }, message: "must be equal to one of the allowed values" }];
+                          validate25.errors = [{ instancePath: instancePath + "/service", schemaPath: "#/definitions/ServiceName/enum", keyword: "enum", params: { allowedValues: schema41.enum }, message: "must be equal to one of the allowed values" }];
                           return false;
                         }
                         var valid0 = _errs106 === errors;
@@ -3673,9 +3758,9 @@ function validate25(data, { instancePath = "", parentData, parentDataProperty, r
   return errors === 0;
 }
 var createContext = validate26;
-var schema41 = { "$id": "https://ja3proxy.invalid/contracts/createContext.schema.json", "$schema": "http://json-schema.org/draft-07/schema#", "additionalProperties": false, "definitions": { "BrowserIdentity": { "additionalProperties": false, "properties": { "emulateHeaders": { "type": "boolean" }, "tlsProfile": { "type": "string" }, "userAgent": { "type": ["string", "null"] } }, "required": ["tlsProfile", "emulateHeaders"], "type": "object" }, "ConnectionSpec": { "additionalProperties": false, "properties": { "egress": { "$ref": "#/definitions/Egress" }, "identity": { "$ref": "#/definitions/BrowserIdentity" } }, "required": ["egress", "identity"], "type": "object" }, "CookieMode": { "enum": ["external", "managed"], "type": "string" }, "Egress": { "oneOf": [{ "additionalProperties": false, "properties": { "mode": { "const": "direct", "type": "string" } }, "required": ["mode"], "type": "object" }, { "additionalProperties": false, "properties": { "mode": { "const": "proxy", "type": "string" }, "url": { "type": "string" } }, "required": ["mode", "url"], "type": "object" }] } }, "properties": { "allowedOrigins": { "items": { "type": "string" }, "type": "array" }, "connection": { "$ref": "#/definitions/ConnectionSpec" }, "cookieMode": { "$ref": "#/definitions/CookieMode" }, "partition": { "type": "string" }, "ttlMs": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 } }, "required": ["partition", "connection", "cookieMode", "allowedOrigins"], "title": "CreateContext", "type": "object" };
-var schema45 = { "enum": ["external", "managed"], "type": "string" };
-var schema44 = { "additionalProperties": false, "properties": { "emulateHeaders": { "type": "boolean" }, "tlsProfile": { "type": "string" }, "userAgent": { "type": ["string", "null"] } }, "required": ["tlsProfile", "emulateHeaders"], "type": "object" };
+var schema42 = { "$id": "https://ja3proxy.invalid/contracts/createContext.schema.json", "$schema": "http://json-schema.org/draft-07/schema#", "additionalProperties": false, "definitions": { "BrowserIdentity": { "additionalProperties": false, "properties": { "emulateHeaders": { "type": "boolean" }, "tlsProfile": { "type": "string" }, "userAgent": { "type": ["string", "null"] } }, "required": ["tlsProfile", "emulateHeaders"], "type": "object" }, "ConnectionSpec": { "additionalProperties": false, "properties": { "egress": { "$ref": "#/definitions/Egress" }, "identity": { "$ref": "#/definitions/BrowserIdentity" } }, "required": ["egress", "identity"], "type": "object" }, "CookieMode": { "enum": ["external", "managed"], "type": "string" }, "Egress": { "oneOf": [{ "additionalProperties": false, "properties": { "mode": { "const": "direct", "type": "string" } }, "required": ["mode"], "type": "object" }, { "additionalProperties": false, "properties": { "mode": { "const": "proxy", "type": "string" }, "url": { "type": "string" } }, "required": ["mode", "url"], "type": "object" }] } }, "properties": { "allowedOrigins": { "items": { "type": "string" }, "type": "array" }, "connection": { "$ref": "#/definitions/ConnectionSpec" }, "cookieMode": { "$ref": "#/definitions/CookieMode" }, "partition": { "type": "string" }, "ttlMs": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 } }, "required": ["partition", "connection", "cookieMode", "allowedOrigins"], "title": "CreateContext", "type": "object" };
+var schema46 = { "enum": ["external", "managed"], "type": "string" };
+var schema45 = { "additionalProperties": false, "properties": { "emulateHeaders": { "type": "boolean" }, "tlsProfile": { "type": "string" }, "userAgent": { "type": ["string", "null"] } }, "required": ["tlsProfile", "emulateHeaders"], "type": "object" };
 function validate27(data, { instancePath = "", parentData, parentDataProperty, rootData = data } = {}) {
   let vErrors = null;
   let errors = 0;
@@ -3928,7 +4013,7 @@ function validate27(data, { instancePath = "", parentData, parentDataProperty, r
                             let data7 = data4.userAgent;
                             const _errs25 = errors;
                             if (typeof data7 !== "string" && data7 !== null) {
-                              validate27.errors = [{ instancePath: instancePath + "/identity/userAgent", schemaPath: "#/definitions/BrowserIdentity/properties/userAgent/type", keyword: "type", params: { type: schema44.properties.userAgent.type }, message: "must be string,null" }];
+                              validate27.errors = [{ instancePath: instancePath + "/identity/userAgent", schemaPath: "#/definitions/BrowserIdentity/properties/userAgent/type", keyword: "type", params: { type: schema45.properties.userAgent.type }, message: "must be string,null" }];
                               return false;
                             }
                             var valid6 = _errs25 === errors;
@@ -4026,7 +4111,7 @@ function validate26(data, { instancePath = "", parentData, parentDataProperty, r
                   return false;
                 }
                 if (!(data3 === "external" || data3 === "managed")) {
-                  validate26.errors = [{ instancePath: instancePath + "/cookieMode", schemaPath: "#/definitions/CookieMode/enum", keyword: "enum", params: { allowedValues: schema45.enum }, message: "must be equal to one of the allowed values" }];
+                  validate26.errors = [{ instancePath: instancePath + "/cookieMode", schemaPath: "#/definitions/CookieMode/enum", keyword: "enum", params: { allowedValues: schema46.enum }, message: "must be equal to one of the allowed values" }];
                   return false;
                 }
                 var valid0 = _errs7 === errors;
@@ -4049,7 +4134,7 @@ function validate26(data, { instancePath = "", parentData, parentDataProperty, r
                     let data5 = data.ttlMs;
                     const _errs12 = errors;
                     if (!(typeof data5 == "number" && (!(data5 % 1) && !isNaN(data5)) && isFinite(data5)) && data5 !== null) {
-                      validate26.errors = [{ instancePath: instancePath + "/ttlMs", schemaPath: "#/properties/ttlMs/type", keyword: "type", params: { type: schema41.properties.ttlMs.type }, message: "must be integer,null" }];
+                      validate26.errors = [{ instancePath: instancePath + "/ttlMs", schemaPath: "#/properties/ttlMs/type", keyword: "type", params: { type: schema42.properties.ttlMs.type }, message: "must be integer,null" }];
                       return false;
                     }
                     if (errors === _errs12) {
@@ -4084,8 +4169,8 @@ function validate26(data, { instancePath = "", parentData, parentDataProperty, r
   return errors === 0;
 }
 var cookieOperation = validate29;
-var schema48 = { "additionalProperties": false, "properties": { "domain": { "type": "string" }, "expiresAtMs": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "hostOnly": { "type": "boolean" }, "httpOnly": { "type": "boolean" }, "name": { "type": "string" }, "partitioned": { "type": "boolean" }, "path": { "type": "string" }, "sameSite": { "anyOf": [{ "$ref": "#/definitions/CookieSameSite" }, { "type": "null" }] }, "secure": { "type": "boolean" }, "value": { "type": "string" } }, "required": ["name", "value", "domain", "path", "secure", "httpOnly", "hostOnly", "partitioned"], "type": "object" };
-var schema49 = { "enum": ["Strict", "Lax", "None"], "type": "string" };
+var schema49 = { "additionalProperties": false, "properties": { "domain": { "type": "string" }, "expiresAtMs": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "hostOnly": { "type": "boolean" }, "httpOnly": { "type": "boolean" }, "name": { "type": "string" }, "partitioned": { "type": "boolean" }, "path": { "type": "string" }, "sameSite": { "anyOf": [{ "$ref": "#/definitions/CookieSameSite" }, { "type": "null" }] }, "secure": { "type": "boolean" }, "value": { "type": "string" } }, "required": ["name", "value", "domain", "path", "secure", "httpOnly", "hostOnly", "partitioned"], "type": "object" };
+var schema50 = { "enum": ["Strict", "Lax", "None"], "type": "string" };
 function validate31(data, { instancePath = "", parentData, parentDataProperty, rootData = data } = {}) {
   let vErrors = null;
   let errors = 0;
@@ -4098,7 +4183,7 @@ function validate31(data, { instancePath = "", parentData, parentDataProperty, r
       } else {
         const _errs1 = errors;
         for (const key0 in data) {
-          if (!func2.call(schema48.properties, key0)) {
+          if (!func2.call(schema49.properties, key0)) {
             validate31.errors = [{ instancePath, schemaPath: "#/additionalProperties", keyword: "additionalProperties", params: { additionalProperty: key0 }, message: "must NOT have additional properties" }];
             return false;
             break;
@@ -4120,7 +4205,7 @@ function validate31(data, { instancePath = "", parentData, parentDataProperty, r
               let data1 = data.expiresAtMs;
               const _errs4 = errors;
               if (!(typeof data1 == "number" && (!(data1 % 1) && !isNaN(data1)) && isFinite(data1)) && data1 !== null) {
-                validate31.errors = [{ instancePath: instancePath + "/expiresAtMs", schemaPath: "#/properties/expiresAtMs/type", keyword: "type", params: { type: schema48.properties.expiresAtMs.type }, message: "must be integer,null" }];
+                validate31.errors = [{ instancePath: instancePath + "/expiresAtMs", schemaPath: "#/properties/expiresAtMs/type", keyword: "type", params: { type: schema49.properties.expiresAtMs.type }, message: "must be integer,null" }];
                 return false;
               }
               if (errors === _errs4) {
@@ -4212,7 +4297,7 @@ function validate31(data, { instancePath = "", parentData, parentDataProperty, r
                             errors++;
                           }
                           if (!(data7 === "Strict" || data7 === "Lax" || data7 === "None")) {
-                            const err1 = { instancePath: instancePath + "/sameSite", schemaPath: "#/definitions/CookieSameSite/enum", keyword: "enum", params: { allowedValues: schema49.enum }, message: "must be equal to one of the allowed values" };
+                            const err1 = { instancePath: instancePath + "/sameSite", schemaPath: "#/definitions/CookieSameSite/enum", keyword: "enum", params: { allowedValues: schema50.enum }, message: "must be equal to one of the allowed values" };
                             if (vErrors === null) {
                               vErrors = [err1];
                             } else {
@@ -4926,9 +5011,9 @@ function validate29(data, { instancePath = "", parentData, parentDataProperty, r
   return errors === 0;
 }
 var cookieReply = validate34;
-var schema50 = { "$id": "https://ja3proxy.invalid/contracts/cookieReply.schema.json", "$schema": "http://json-schema.org/draft-07/schema#", "definitions": { "CookieRecord": { "additionalProperties": false, "properties": { "domain": { "type": "string" }, "expiresAtMs": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "hostOnly": { "type": "boolean" }, "httpOnly": { "type": "boolean" }, "name": { "type": "string" }, "partitioned": { "type": "boolean" }, "path": { "type": "string" }, "sameSite": { "anyOf": [{ "$ref": "#/definitions/CookieSameSite" }, { "type": "null" }] }, "secure": { "type": "boolean" }, "value": { "type": "string" } }, "required": ["name", "value", "domain", "path", "secure", "httpOnly", "hostOnly", "partitioned"], "type": "object" }, "CookieSameSite": { "enum": ["Strict", "Lax", "None"], "type": "string" }, "CookieSnapshot": { "additionalProperties": false, "properties": { "cookies": { "items": { "$ref": "#/definitions/CookieRecord" }, "type": "array" }, "partitionKey": { "type": "string" } }, "required": ["partitionKey", "cookies"], "type": "object" } }, "properties": { "cookies": { "items": { "$ref": "#/definitions/CookieRecord" }, "type": ["array", "null"] }, "revision": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "snapshot": { "anyOf": [{ "$ref": "#/definitions/CookieSnapshot" }, { "type": "null" }] } }, "required": ["revision"], "title": "CookieReply", "type": "object" };
-var schema51 = { "additionalProperties": false, "properties": { "domain": { "type": "string" }, "expiresAtMs": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "hostOnly": { "type": "boolean" }, "httpOnly": { "type": "boolean" }, "name": { "type": "string" }, "partitioned": { "type": "boolean" }, "path": { "type": "string" }, "sameSite": { "anyOf": [{ "$ref": "#/definitions/CookieSameSite" }, { "type": "null" }] }, "secure": { "type": "boolean" }, "value": { "type": "string" } }, "required": ["name", "value", "domain", "path", "secure", "httpOnly", "hostOnly", "partitioned"], "type": "object" };
-var schema52 = { "enum": ["Strict", "Lax", "None"], "type": "string" };
+var schema51 = { "$id": "https://ja3proxy.invalid/contracts/cookieReply.schema.json", "$schema": "http://json-schema.org/draft-07/schema#", "definitions": { "CookieRecord": { "additionalProperties": false, "properties": { "domain": { "type": "string" }, "expiresAtMs": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "hostOnly": { "type": "boolean" }, "httpOnly": { "type": "boolean" }, "name": { "type": "string" }, "partitioned": { "type": "boolean" }, "path": { "type": "string" }, "sameSite": { "anyOf": [{ "$ref": "#/definitions/CookieSameSite" }, { "type": "null" }] }, "secure": { "type": "boolean" }, "value": { "type": "string" } }, "required": ["name", "value", "domain", "path", "secure", "httpOnly", "hostOnly", "partitioned"], "type": "object" }, "CookieSameSite": { "enum": ["Strict", "Lax", "None"], "type": "string" }, "CookieSnapshot": { "additionalProperties": false, "properties": { "cookies": { "items": { "$ref": "#/definitions/CookieRecord" }, "type": "array" }, "partitionKey": { "type": "string" } }, "required": ["partitionKey", "cookies"], "type": "object" } }, "properties": { "cookies": { "items": { "$ref": "#/definitions/CookieRecord" }, "type": ["array", "null"] }, "revision": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "snapshot": { "anyOf": [{ "$ref": "#/definitions/CookieSnapshot" }, { "type": "null" }] } }, "required": ["revision"], "title": "CookieReply", "type": "object" };
+var schema52 = { "additionalProperties": false, "properties": { "domain": { "type": "string" }, "expiresAtMs": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "hostOnly": { "type": "boolean" }, "httpOnly": { "type": "boolean" }, "name": { "type": "string" }, "partitioned": { "type": "boolean" }, "path": { "type": "string" }, "sameSite": { "anyOf": [{ "$ref": "#/definitions/CookieSameSite" }, { "type": "null" }] }, "secure": { "type": "boolean" }, "value": { "type": "string" } }, "required": ["name", "value", "domain", "path", "secure", "httpOnly", "hostOnly", "partitioned"], "type": "object" };
+var schema53 = { "enum": ["Strict", "Lax", "None"], "type": "string" };
 function validate35(data, { instancePath = "", parentData, parentDataProperty, rootData = data } = {}) {
   let vErrors = null;
   let errors = 0;
@@ -4941,7 +5026,7 @@ function validate35(data, { instancePath = "", parentData, parentDataProperty, r
       } else {
         const _errs1 = errors;
         for (const key0 in data) {
-          if (!func2.call(schema51.properties, key0)) {
+          if (!func2.call(schema52.properties, key0)) {
             validate35.errors = [{ instancePath, schemaPath: "#/additionalProperties", keyword: "additionalProperties", params: { additionalProperty: key0 }, message: "must NOT have additional properties" }];
             return false;
             break;
@@ -4963,7 +5048,7 @@ function validate35(data, { instancePath = "", parentData, parentDataProperty, r
               let data1 = data.expiresAtMs;
               const _errs4 = errors;
               if (!(typeof data1 == "number" && (!(data1 % 1) && !isNaN(data1)) && isFinite(data1)) && data1 !== null) {
-                validate35.errors = [{ instancePath: instancePath + "/expiresAtMs", schemaPath: "#/properties/expiresAtMs/type", keyword: "type", params: { type: schema51.properties.expiresAtMs.type }, message: "must be integer,null" }];
+                validate35.errors = [{ instancePath: instancePath + "/expiresAtMs", schemaPath: "#/properties/expiresAtMs/type", keyword: "type", params: { type: schema52.properties.expiresAtMs.type }, message: "must be integer,null" }];
                 return false;
               }
               if (errors === _errs4) {
@@ -5055,7 +5140,7 @@ function validate35(data, { instancePath = "", parentData, parentDataProperty, r
                             errors++;
                           }
                           if (!(data7 === "Strict" || data7 === "Lax" || data7 === "None")) {
-                            const err1 = { instancePath: instancePath + "/sameSite", schemaPath: "#/definitions/CookieSameSite/enum", keyword: "enum", params: { allowedValues: schema52.enum }, message: "must be equal to one of the allowed values" };
+                            const err1 = { instancePath: instancePath + "/sameSite", schemaPath: "#/definitions/CookieSameSite/enum", keyword: "enum", params: { allowedValues: schema53.enum }, message: "must be equal to one of the allowed values" };
                             if (vErrors === null) {
                               vErrors = [err1];
                             } else {
@@ -5227,7 +5312,7 @@ function validate34(data, { instancePath = "", parentData, parentDataProperty, r
           let data0 = data.cookies;
           const _errs1 = errors;
           if (!Array.isArray(data0) && data0 !== null) {
-            validate34.errors = [{ instancePath: instancePath + "/cookies", schemaPath: "#/properties/cookies/type", keyword: "type", params: { type: schema50.properties.cookies.type }, message: "must be array,null" }];
+            validate34.errors = [{ instancePath: instancePath + "/cookies", schemaPath: "#/properties/cookies/type", keyword: "type", params: { type: schema51.properties.cookies.type }, message: "must be array,null" }];
             return false;
           }
           if (errors === _errs1) {
@@ -5339,10 +5424,10 @@ function validate34(data, { instancePath = "", parentData, parentDataProperty, r
   return errors === 0;
 }
 var requestStatus = validate40;
-var schema60 = { "enum": ["queued", "active", "complete", "failed"], "type": "string" };
-var schema55 = { "properties": { "attempt": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "bodyMs": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "clientReused": { "type": ["boolean", "null"] }, "contextId": { "type": ["string", "null"] }, "cookieRevision": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "delivery": { "$ref": "#/definitions/Delivery" }, "headersMs": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "phase": { "$ref": "#/definitions/Phase" }, "queueMs": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "requestBytes": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "requestId": { "type": "string" }, "responseBytes": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "spanId": { "type": "string" }, "tlsProfile": { "type": "string" }, "totalMs": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "traceId": { "type": "string" } }, "required": ["requestId", "attempt", "traceId", "spanId", "phase", "delivery", "queueMs", "headersMs", "bodyMs", "totalMs", "requestBytes", "responseBytes", "tlsProfile"], "type": "object" };
-var schema56 = { "enum": ["not_started", "possibly_sent", "response_started"], "type": "string" };
-var schema57 = { "enum": ["queued", "preparing", "upstream", "body", "complete"], "type": "string" };
+var schema61 = { "enum": ["queued", "active", "complete", "failed"], "type": "string" };
+var schema56 = { "properties": { "attempt": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "bodyMs": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "clientReused": { "type": ["boolean", "null"] }, "contextId": { "type": ["string", "null"] }, "cookieRevision": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "delivery": { "$ref": "#/definitions/Delivery" }, "headersMs": { "format": "uint64", "minimum": 0, "type": ["integer", "null"], "maximum": 9007199254740991 }, "phase": { "$ref": "#/definitions/Phase" }, "queueMs": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "requestBytes": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "requestId": { "type": "string" }, "responseBytes": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "spanId": { "type": "string" }, "tlsProfile": { "type": "string" }, "totalMs": { "format": "uint64", "minimum": 0, "type": "integer", "maximum": 9007199254740991 }, "traceId": { "type": "string" } }, "required": ["requestId", "attempt", "traceId", "spanId", "phase", "delivery", "queueMs", "headersMs", "bodyMs", "totalMs", "requestBytes", "responseBytes", "tlsProfile"], "type": "object" };
+var schema57 = { "enum": ["not_started", "possibly_sent", "response_started"], "type": "string" };
+var schema58 = { "enum": ["queued", "preparing", "upstream", "body", "complete"], "type": "string" };
 function validate41(data, { instancePath = "", parentData, parentDataProperty, rootData = data } = {}) {
   let vErrors = null;
   let errors = 0;
@@ -5382,7 +5467,7 @@ function validate41(data, { instancePath = "", parentData, parentDataProperty, r
             let data1 = data.bodyMs;
             const _errs3 = errors;
             if (!(typeof data1 == "number" && (!(data1 % 1) && !isNaN(data1)) && isFinite(data1)) && data1 !== null) {
-              validate41.errors = [{ instancePath: instancePath + "/bodyMs", schemaPath: "#/properties/bodyMs/type", keyword: "type", params: { type: schema55.properties.bodyMs.type }, message: "must be integer,null" }];
+              validate41.errors = [{ instancePath: instancePath + "/bodyMs", schemaPath: "#/properties/bodyMs/type", keyword: "type", params: { type: schema56.properties.bodyMs.type }, message: "must be integer,null" }];
               return false;
             }
             if (errors === _errs3) {
@@ -5407,7 +5492,7 @@ function validate41(data, { instancePath = "", parentData, parentDataProperty, r
               let data2 = data.clientReused;
               const _errs5 = errors;
               if (typeof data2 !== "boolean" && data2 !== null) {
-                validate41.errors = [{ instancePath: instancePath + "/clientReused", schemaPath: "#/properties/clientReused/type", keyword: "type", params: { type: schema55.properties.clientReused.type }, message: "must be boolean,null" }];
+                validate41.errors = [{ instancePath: instancePath + "/clientReused", schemaPath: "#/properties/clientReused/type", keyword: "type", params: { type: schema56.properties.clientReused.type }, message: "must be boolean,null" }];
                 return false;
               }
               var valid0 = _errs5 === errors;
@@ -5419,7 +5504,7 @@ function validate41(data, { instancePath = "", parentData, parentDataProperty, r
                 let data3 = data.contextId;
                 const _errs7 = errors;
                 if (typeof data3 !== "string" && data3 !== null) {
-                  validate41.errors = [{ instancePath: instancePath + "/contextId", schemaPath: "#/properties/contextId/type", keyword: "type", params: { type: schema55.properties.contextId.type }, message: "must be string,null" }];
+                  validate41.errors = [{ instancePath: instancePath + "/contextId", schemaPath: "#/properties/contextId/type", keyword: "type", params: { type: schema56.properties.contextId.type }, message: "must be string,null" }];
                   return false;
                 }
                 var valid0 = _errs7 === errors;
@@ -5431,7 +5516,7 @@ function validate41(data, { instancePath = "", parentData, parentDataProperty, r
                   let data4 = data.cookieRevision;
                   const _errs9 = errors;
                   if (!(typeof data4 == "number" && (!(data4 % 1) && !isNaN(data4)) && isFinite(data4)) && data4 !== null) {
-                    validate41.errors = [{ instancePath: instancePath + "/cookieRevision", schemaPath: "#/properties/cookieRevision/type", keyword: "type", params: { type: schema55.properties.cookieRevision.type }, message: "must be integer,null" }];
+                    validate41.errors = [{ instancePath: instancePath + "/cookieRevision", schemaPath: "#/properties/cookieRevision/type", keyword: "type", params: { type: schema56.properties.cookieRevision.type }, message: "must be integer,null" }];
                     return false;
                   }
                   if (errors === _errs9) {
@@ -5460,7 +5545,7 @@ function validate41(data, { instancePath = "", parentData, parentDataProperty, r
                       return false;
                     }
                     if (!(data5 === "not_started" || data5 === "possibly_sent" || data5 === "response_started")) {
-                      validate41.errors = [{ instancePath: instancePath + "/delivery", schemaPath: "#/definitions/Delivery/enum", keyword: "enum", params: { allowedValues: schema56.enum }, message: "must be equal to one of the allowed values" }];
+                      validate41.errors = [{ instancePath: instancePath + "/delivery", schemaPath: "#/definitions/Delivery/enum", keyword: "enum", params: { allowedValues: schema57.enum }, message: "must be equal to one of the allowed values" }];
                       return false;
                     }
                     var valid0 = _errs11 === errors;
@@ -5472,7 +5557,7 @@ function validate41(data, { instancePath = "", parentData, parentDataProperty, r
                       let data6 = data.headersMs;
                       const _errs14 = errors;
                       if (!(typeof data6 == "number" && (!(data6 % 1) && !isNaN(data6)) && isFinite(data6)) && data6 !== null) {
-                        validate41.errors = [{ instancePath: instancePath + "/headersMs", schemaPath: "#/properties/headersMs/type", keyword: "type", params: { type: schema55.properties.headersMs.type }, message: "must be integer,null" }];
+                        validate41.errors = [{ instancePath: instancePath + "/headersMs", schemaPath: "#/properties/headersMs/type", keyword: "type", params: { type: schema56.properties.headersMs.type }, message: "must be integer,null" }];
                         return false;
                       }
                       if (errors === _errs14) {
@@ -5501,7 +5586,7 @@ function validate41(data, { instancePath = "", parentData, parentDataProperty, r
                           return false;
                         }
                         if (!(data7 === "queued" || data7 === "preparing" || data7 === "upstream" || data7 === "body" || data7 === "complete")) {
-                          validate41.errors = [{ instancePath: instancePath + "/phase", schemaPath: "#/definitions/Phase/enum", keyword: "enum", params: { allowedValues: schema57.enum }, message: "must be equal to one of the allowed values" }];
+                          validate41.errors = [{ instancePath: instancePath + "/phase", schemaPath: "#/definitions/Phase/enum", keyword: "enum", params: { allowedValues: schema58.enum }, message: "must be equal to one of the allowed values" }];
                           return false;
                         }
                         var valid0 = _errs16 === errors;
@@ -5676,7 +5761,7 @@ function validate41(data, { instancePath = "", parentData, parentDataProperty, r
   validate41.errors = vErrors;
   return errors === 0;
 }
-var schema59 = { "enum": ["UNAUTHORIZED", "INVALID_REQUEST", "UNSUPPORTED_CAPABILITY", "INVALID_PROFILE", "EGRESS_REQUIRED", "SSRF_BLOCKED", "BODY_TOO_LARGE", "BUSY", "TIMEOUT", "CANCELLED", "DNS_ERROR", "PROXY_ERROR", "TLS_ERROR", "CONNECT_ERROR", "PROTOCOL_ERROR", "CONTEXT_NOT_FOUND", "CONTEXT_CONFLICT", "CONTEXT_LIMIT", "COOKIE_LIMIT", "DUPLICATE_REQUEST", "UNKNOWN"], "type": "string" };
+var schema60 = { "enum": ["UNAUTHORIZED", "INVALID_REQUEST", "UNSUPPORTED_CAPABILITY", "INVALID_PROFILE", "EGRESS_REQUIRED", "SSRF_BLOCKED", "BODY_TOO_LARGE", "BUSY", "TIMEOUT", "CANCELLED", "DNS_ERROR", "PROXY_ERROR", "TLS_ERROR", "CONNECT_ERROR", "PROTOCOL_ERROR", "CONTEXT_NOT_FOUND", "CONTEXT_CONFLICT", "CONTEXT_LIMIT", "COOKIE_LIMIT", "DUPLICATE_REQUEST", "UNKNOWN"], "type": "string" };
 function validate43(data, { instancePath = "", parentData, parentDataProperty, rootData = data } = {}) {
   let vErrors = null;
   let errors = 0;
@@ -5695,7 +5780,7 @@ function validate43(data, { instancePath = "", parentData, parentDataProperty, r
             return false;
           }
           if (!(data0 === "UNAUTHORIZED" || data0 === "INVALID_REQUEST" || data0 === "UNSUPPORTED_CAPABILITY" || data0 === "INVALID_PROFILE" || data0 === "EGRESS_REQUIRED" || data0 === "SSRF_BLOCKED" || data0 === "BODY_TOO_LARGE" || data0 === "BUSY" || data0 === "TIMEOUT" || data0 === "CANCELLED" || data0 === "DNS_ERROR" || data0 === "PROXY_ERROR" || data0 === "TLS_ERROR" || data0 === "CONNECT_ERROR" || data0 === "PROTOCOL_ERROR" || data0 === "CONTEXT_NOT_FOUND" || data0 === "CONTEXT_CONFLICT" || data0 === "CONTEXT_LIMIT" || data0 === "COOKIE_LIMIT" || data0 === "DUPLICATE_REQUEST" || data0 === "UNKNOWN")) {
-            validate43.errors = [{ instancePath: instancePath + "/code", schemaPath: "#/definitions/ErrorCode/enum", keyword: "enum", params: { allowedValues: schema59.enum }, message: "must be equal to one of the allowed values" }];
+            validate43.errors = [{ instancePath: instancePath + "/code", schemaPath: "#/definitions/ErrorCode/enum", keyword: "enum", params: { allowedValues: schema60.enum }, message: "must be equal to one of the allowed values" }];
             return false;
           }
           var valid0 = _errs1 === errors;
@@ -5856,7 +5941,7 @@ function validate40(data, { instancePath = "", parentData, parentDataProperty, r
                 return false;
               }
               if (!(data2 === "queued" || data2 === "active" || data2 === "complete" || data2 === "failed")) {
-                validate40.errors = [{ instancePath: instancePath + "/state", schemaPath: "#/definitions/RequestState/enum", keyword: "enum", params: { allowedValues: schema60.enum }, message: "must be equal to one of the allowed values" }];
+                validate40.errors = [{ instancePath: instancePath + "/state", schemaPath: "#/definitions/RequestState/enum", keyword: "enum", params: { allowedValues: schema61.enum }, message: "must be equal to one of the allowed values" }];
                 return false;
               }
               var valid0 = _errs7 === errors;

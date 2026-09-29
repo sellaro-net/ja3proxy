@@ -419,10 +419,13 @@ async fn transfer(
         .client()
         .request(method.clone(), &metadata.url)
         .await?;
-    let mut builder =
-        owner
-            .client()
-            .apply_headers(builder, &method, metadata.has_body, &metadata.headers)?;
+    let mut builder = owner.client().apply_headers(
+        builder,
+        &method,
+        metadata.has_body,
+        &metadata.headers,
+        metadata.header_order,
+    )?;
     if let Some(access) = &cookie_access {
         if let Some(cookies) = access.header() {
             builder = builder.header("cookie", cookies);

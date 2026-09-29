@@ -51,6 +51,36 @@
       }
     },
     {
+      "errorCode": null,
+      "name": "browser-header-order",
+      "schemaValid": true,
+      "sdkBoundary": "encode",
+      "semanticValid": true,
+      "value": {
+        "attempt": 1,
+        "bodyLength": 0,
+        "connection": {
+          "egress": {
+            "mode": "direct"
+          },
+          "identity": {
+            "emulateHeaders": false,
+            "tlsProfile": "chrome_133"
+          }
+        },
+        "contextId": null,
+        "hasBody": false,
+        "headerOrder": "browser",
+        "headers": [],
+        "maxResponseBytes": 1024,
+        "method": "POST",
+        "partition": "semantic-partition",
+        "requestId": "semantic-request",
+        "timeoutMs": 5000,
+        "url": "https://example.com/"
+      }
+    },
+    {
       "errorCode": "INVALID_REQUEST",
       "name": "both-connection-and-context",
       "schemaValid": true,

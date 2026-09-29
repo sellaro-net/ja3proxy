@@ -15,7 +15,6 @@ COPY rust-toolchain.toml ./
 RUN rustup show active-toolchain
 
 COPY Cargo.toml Cargo.lock ./
-COPY vendor ./vendor
 COPY src ./src
 # Compile the real source once. A cached dummy main must never become the
 # shipped executable; target caches remain isolated between architectures.

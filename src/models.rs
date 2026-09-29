@@ -42,12 +42,35 @@ pub struct RequestMetadata {
     pub url: String,
     pub method: String,
     pub headers: Vec<(String, String)>,
+    /// Wire order of the request headers: `caller` (default) sends them in the given order,
+    /// `browser` applies the Chrome profile's order for the request kind.
+    #[serde(default, skip_serializing_if = "HeaderOrder::is_caller")]
+    pub header_order: HeaderOrder,
     pub has_body: bool,
     #[serde(default)]
     pub body_length: Option<u64>,
     pub timeout_ms: u64,
     pub max_response_bytes: u64,
     pub attempt: u64,
+}
+
+/// Header wire order of one request.
+#[derive(Clone, Copy, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
+#[cfg_attr(feature = "schema-export", derive(schemars::JsonSchema))]
+#[serde(rename_all = "lowercase")]
+pub enum HeaderOrder {
+    /// Headers go on the wire in the caller's order.
+    #[default]
+    Caller,
+    /// Chrome profiles order headers like Chrome for the request kind; other profiles keep the
+    /// caller's order.
+    Browser,
+}
+
+impl HeaderOrder {
+    fn is_caller(&self) -> bool {
+        *self == Self::Caller
+    }
 }
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]

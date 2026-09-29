@@ -41877,6 +41877,96 @@
       }
     },
     {
+      "contract": "requestMetadata",
+      "name": "requestMetadata-header-order-browser",
+      "reason": "headerOrder accepts exactly caller and browser.",
+      "rustAccepts": true,
+      "valid": true,
+      "value": {
+        "attempt": 1,
+        "bodyLength": 0,
+        "connection": {
+          "egress": {
+            "mode": "direct"
+          },
+          "identity": {
+            "emulateHeaders": false,
+            "tlsProfile": "chrome_133"
+          }
+        },
+        "contextId": null,
+        "hasBody": false,
+        "headerOrder": "browser",
+        "headers": [],
+        "maxResponseBytes": 1024,
+        "method": "GET",
+        "partition": "contract-partition",
+        "requestId": "contract-request",
+        "timeoutMs": 5000,
+        "url": "https://example.com/"
+      }
+    },
+    {
+      "contract": "requestMetadata",
+      "name": "requestMetadata-header-order-caller",
+      "reason": "headerOrder accepts exactly caller and browser.",
+      "rustAccepts": true,
+      "valid": true,
+      "value": {
+        "attempt": 1,
+        "bodyLength": 0,
+        "connection": {
+          "egress": {
+            "mode": "direct"
+          },
+          "identity": {
+            "emulateHeaders": false,
+            "tlsProfile": "chrome_133"
+          }
+        },
+        "contextId": null,
+        "hasBody": false,
+        "headerOrder": "caller",
+        "headers": [],
+        "maxResponseBytes": 1024,
+        "method": "GET",
+        "partition": "contract-partition",
+        "requestId": "contract-request",
+        "timeoutMs": 5000,
+        "url": "https://example.com/"
+      }
+    },
+    {
+      "contract": "requestMetadata",
+      "name": "requestMetadata-header-order-unknown",
+      "reason": "headerOrder accepts exactly caller and browser.",
+      "rustAccepts": false,
+      "valid": false,
+      "value": {
+        "attempt": 1,
+        "bodyLength": 0,
+        "connection": {
+          "egress": {
+            "mode": "direct"
+          },
+          "identity": {
+            "emulateHeaders": false,
+            "tlsProfile": "chrome_133"
+          }
+        },
+        "contextId": null,
+        "hasBody": false,
+        "headerOrder": "chrome",
+        "headers": [],
+        "maxResponseBytes": 1024,
+        "method": "GET",
+        "partition": "contract-partition",
+        "requestId": "contract-request",
+        "timeoutMs": 5000,
+        "url": "https://example.com/"
+      }
+    },
+    {
       "contract": "diagnostics",
       "name": "diagnostics-required-null-times",
       "reason": "Unavailable timing fields are explicit null; omitted optional fields stay omitted.",

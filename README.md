@@ -15,7 +15,7 @@ responses without running a browser.
 ## Features
 
 - Selectable TLS/HTTP/2 profiles, including current Chrome releases measured against
-  real Chrome, with browser-true header order, optional header emulation and a fixed
+  real Chrome, with opt-in Chrome header order, optional header emulation and a fixed
   user agent ([profiles](docs/api.md#profiles)).
 - Direct connections or HTTP, HTTPS and SOCKS proxies, without implicit direct fallback.
 - Reusable connection contexts scoped to the caller and connection identity.
@@ -264,9 +264,9 @@ cargo clippy --all-targets --all-features --locked -- -D warnings
 cargo test --all-features --locked
 ```
 
-The pinned `wreq` dependency includes a connector patch for address and
-cancellation ownership. Read its [provenance and refresh requirements](vendor/wreq/transport-provenance.json)
-before updating it. Third-party code keeps its own license terms. The TypeScript
+The `wreq` dependency is pinned to a fork with transport patches for address and
+cancellation ownership and Chrome ClientHello parity. Read the
+[dependency notes and update procedure](docs/dependencies.md) before updating it. Third-party code keeps its own license terms. The TypeScript
 SDK has its own MIT grant; there is no repository-wide license grant for the Rust code.
 
 ## Project links
