@@ -1,4 +1,4 @@
-import type { Ja3Diagnostics, Ja3Delivery, Ja3ErrorCode, Ja3ProxyFailureKind } from './types.js';
+import type { ExchangeReferences, Ja3Diagnostics, Ja3Delivery, Ja3ErrorCode, Ja3ProxyFailureKind } from './types.js';
 
 const messages: Record<Ja3ErrorCode, string> = {
   UNAUTHORIZED: 'Die JA3Proxy-Dienstanmeldung fehlt oder ist ungültig.',
@@ -42,7 +42,9 @@ export class Ja3ProxyTransportError extends Error {
   readonly diagnostics: Ja3Diagnostics;
   readonly delivery: Ja3Delivery;
   readonly usedProxy: boolean;
-  constructor(code: Ja3ErrorCode, diagnostics: Ja3Diagnostics, usedProxy = false, kind?: Ja3ProxyFailureKind) {
+  /** Observer-supplied references of the failed attempt; absent when no observer supplied any. */
+  declare readonly references?: ExchangeReferences;
+  constructor(code: Ja3ErrorCode, diagnostics: Ja3Diagnostics, usedProxy = false, kind?: Ja3ProxyFailureKind, references?: ExchangeReferences) {
     super(messages[code]);
     this.name = 'Ja3ProxyTransportError';
     this.code = code;
@@ -50,8 +52,13 @@ export class Ja3ProxyTransportError extends Error {
     this.delivery = diagnostics.delivery;
     this.usedProxy = usedProxy;
     this.kind = kind ?? (code === 'PROXY_ERROR' ? 'proxy_unreachable' : diagnostics.delivery === 'response_started' ? 'connection_lost' : 'unknown');
+    if (references) this.references = references;
     Object.freeze(this);
   }
+}
+/** Errors are frozen, so an attempt's references are attached by an equivalent copy. */
+export function withReferences(error: Ja3ProxyTransportError, references: ExchangeReferences | undefined): Ja3ProxyTransportError {
+  return !references || error.references === references ? error : new Ja3ProxyTransportError(error.code, error.diagnostics, error.usedProxy, error.kind, references);
 }
 export function isJa3ProxyError(value: unknown): value is Ja3ProxyTransportError { return value instanceof Ja3ProxyTransportError; }
 export function initialDiagnostics(requestId = 'local', attempt = 0, tlsProfile = 'unknown'): Ja3Diagnostics {

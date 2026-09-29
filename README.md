@@ -179,7 +179,8 @@ try {
   completion and close streams abandoned early.
 - `createFetch()` returns a closeable fetch adapter. It is stateless unless
   `context: 'session'` is explicit. `getResponseCompletion(response)` returns the
-  terminal result for SDK responses and `undefined` for unrelated native responses.
+  terminal result for SDK responses and `undefined` for unrelated native responses;
+  `getResponseReferences(response)` does the same for observer references.
 - `createSession()` owns its context. Managed cookie sessions require allowed
   origins and expose cookie snapshots, revision-checked imports and rebinding.
   `committed_cleanup_pending` means the new identity is already bound: do not
@@ -197,6 +198,20 @@ Queueing, lazy context creation and response processing share one total deadline
 The SDK does not retry requests, follow redirects, rotate proxies or fall back to
 direct connections. Application policy owns those decisions. Observers receive
 bounded byte copies; the SDK does not install tracing or journals.
+
+An observation may carry `references`: application correlation IDs such as trace
+or journal entry IDs. The SDK takes a frozen copy when the observer returns and
+exposes it as `references` on the attempt's `BufferedResponse`, `StreamingResponse`
+and every `Ja3ProxyTransportError` raised after the observer ran, including
+`tryRequest()` failures, stream completion and cancellation. Fetch adapters and
+session fetch expose it through `getResponseReferences(response)`. Without
+references the property is absent. A set holds at most 16 entries; keys match
+`^[A-Za-z][A-Za-z0-9_.-]{0,63}$`, values are strings of 1 to 256 characters
+without control characters. Like other observer faults, an invalid set is dropped
+entirely and never fails the request. Client-level and request-level sets merge,
+request-level values winning; a set that would take the merge past 16 entries is
+dropped. References never leave the process and are not sent to the service. The
+sync client has no observers and therefore no references.
 
 Rust DTOs are the wire-contract source. `pnpm contracts:generate` exports schemas
 and regenerates TypeScript types and standalone validators; `pnpm contracts:check`

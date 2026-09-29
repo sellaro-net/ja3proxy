@@ -36,19 +36,20 @@ run against the code the service ships. Fork a dependency only when it needs a
 change of its own; an unchanged fork adds maintenance without isolating anything
 a commit pin does not.
 
-### Updating
+## Updating
 
-1. Rebase the fork branch onto the new upstream `main` (drop patches upstream has
-   absorbed) and run its `cargo test` and `cargo clippy --all-targets -- -D warnings`.
-2. Set the new fork commit in `[patch.crates-io]`, update `Cargo.lock`
-   (`cargo update -p wreq`) and update the table above.
-3. Run `cargo test --locked` here, including the golden wire tests
+1. **wreq fork:** rebase the fork branch onto the new upstream `main` (drop patches
+   upstream has absorbed) and run its `cargo test` and
+   `cargo clippy --all-targets -- -D warnings`.
+2. **Upstream pins:** move `http2`/`btls` to the new upstream commit, or to a
+   crates.io release once one contains the required API (`http2`:
+   `ext::HeadersPriority`; `btls`: `server_padding` and the ML-DSA signature
+   algorithms). Keep the fork's own `[patch.crates-io]` on the same `http2` commit.
+3. Set the new commits in `[patch.crates-io]` here, update `Cargo.lock`
+   (`cargo update -p wreq -p http2`) and update the tables above.
+4. Run `cargo test --locked` here, including the golden wire tests
    (`src/network/golden.rs`, `src/emulation/tests.rs`) and the address, proxy,
    pooling and cancellation regressions (`src/network/tests.rs`,
    `src/validation.rs`).
-4. Build the image and compare its TLS/HTTP/2 fingerprints with the previous
+5. Build the image and compare its TLS/HTTP/2 fingerprints with the previous
    image before release.
-
-Replace each upstream pin with the crates.io release once one contains the
-required API (`http2`: `ext::HeadersPriority`; `btls`: `server_padding` and ML-DSA
-signature algorithms), then rerun the golden tests.

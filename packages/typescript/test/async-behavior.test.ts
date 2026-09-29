@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { setImmediate } from 'node:timers/promises';
 import { inspect } from 'node:util';
 import test from 'node:test';
-import { Ja3ProxyClient, Ja3ProxyTransportError, getResponseCompletion } from '../src/index.js';
+import { Ja3ProxyClient, Ja3ProxyTransportError, getResponseCompletion, getResponseReferences } from '../src/index.js';
 import { capabilities, FrameReader, frame, jsonBytes, parseJson, record } from '../src/protocol.js';
 import { initialDiagnostics } from '../src/errors.js';
-import type { Capabilities, ConnectionSpec, Ja3Diagnostics, RequestOptions } from '../src/types.js';
+import type { Capabilities, ConnectionSpec, ExchangeObserver, Ja3Diagnostics, RequestOptions } from '../src/types.js';
 
 const data: unknown = JSON.parse(await readFile(new URL('../../../contracts/fixtures/wire.json', import.meta.url), 'utf8'));
 assert(record(data) && Array.isArray(data.fixtures));
@@ -332,5 +333,157 @@ test('headerOrder is sent only for browser order and unknown values fail locally
     const invalid = await sdk.tryRequest({ ...target, headerOrder: 'chrome' as never });
     assert(!invalid.ok && invalid.error.code === 'INVALID_REQUEST');
     assert.equal(sent.length, 3);
+  } finally { await sdk.close(); }
+});
+
+test('observer references reach buffered, streaming, fetch and session results but never the service', async () => {
+  const references = { traceId: 'trace-marker-4f1c', 'journal.entry': 'journal-marker-9b2e' };
+  let wire = '';
+  const decoder = new TextDecoder();
+  const transport: typeof fetch = async (input, init) => {
+    const url = new URL(String(input));
+    wire += url.toString() + JSON.stringify([...new Headers(init?.headers)]);
+    if (url.pathname === '/capabilities') return Response.json(caps);
+    if (url.pathname === '/contexts') {
+      const request: unknown = JSON.parse(decoder.decode(init?.body as Uint8Array));
+      wire += JSON.stringify(request);
+      assert(record(request) && record(request.connection));
+      return Response.json({ contextId: 'context-1', partition: target.partition, expiresAtMs: Date.now() + 10_000, revision: 0, cookieMode: 'external', identity: request.connection.identity });
+    }
+    if (url.pathname.startsWith('/contexts/')) return new Response(null, { status: 204 });
+    assert(init?.body instanceof ReadableStream);
+    const [captured, parsed] = init.body.tee();
+    void (async () => { for await (const chunk of captured) wire += decoder.decode(chunk, { stream: true }); })();
+    return response(await readEnvelope({ body: parsed }), diag => success(diag));
+  };
+  const sdk = new Ja3ProxyClient({ baseUrl: 'http://service.invalid/', token, transport, maxResponseBytes: 1024, defaultTimeoutMs: 1000, controlTimeoutMs: 1000, observer: () => ({ references }) });
+  try {
+    const buffered = await sdk.request(target);
+    assert.deepEqual(buffered.references, references);
+    assert.notStrictEqual(buffered.references, references);
+    assert(Object.isFrozen(buffered.references));
+    const attempted = await sdk.tryRequest(target);
+    assert(attempted.ok);
+    assert.deepEqual(attempted.value.references, references);
+    const exchange = await sdk.stream(target);
+    assert.deepEqual(exchange.references, references);
+    assert.equal(await new Response(exchange.body).text(), 'ok');
+    assert.equal((await exchange.completion).ok, true);
+    const fetcher = sdk.createFetch({ partition: target.partition, connection });
+    const fetched = await fetcher(target.url);
+    assert.deepEqual(getResponseReferences(fetched), references);
+    assert.strictEqual(getResponseReferences(fetched.clone()), getResponseReferences(fetched));
+    assert.equal(await fetched.text(), 'ok');
+    assert.equal(getResponseReferences(new Response('native')), undefined);
+    const session = await sdk.createSession({ partition: target.partition, connection, cookieMode: 'external' });
+    assert.deepEqual((await session.request({ method: 'GET', url: target.url })).references, references);
+    const sessionFetched = await session.fetch(target.url);
+    assert.deepEqual(getResponseReferences(sessionFetched), references);
+    assert.equal(await sessionFetched.text(), 'ok');
+    await session.close();
+    await setImmediate();
+    assert(wire.includes('"url":"https://example.com/"') && wire.includes('/contexts'));
+    assert(!wire.includes('marker') && !wire.includes('journal.entry'));
+  } finally { await sdk.close(); }
+});
+
+test('errors raised after the observation started carry its references and stay frozen', async () => {
+  const references = { traceId: 'trace-1' };
+  let observed = 0;
+  const observer: ExchangeObserver = () => { observed++; return { references }; };
+  const transport: typeof fetch = async (input, init) => {
+    if (new URL(String(input)).pathname === '/capabilities') return Response.json(caps);
+    const envelope = await readEnvelope(init);
+    if (envelope.method === 'OPTIONS') return Response.json({ code: 'BUSY', message: 'busy' }, { status: 503 });
+    if (envelope.method === 'HEAD') return response(envelope, diag => [frame(4, jsonBytes({ code: 'TIMEOUT', message: 'timeout', diagnostics: diag }))], undefined, 204);
+    if (envelope.method === 'DELETE') return response(envelope, () => Promise.withResolvers<Uint8Array[]>().promise);
+    return response(envelope, diag => [frame(2, new TextEncoder().encode('ok')), frame(4, jsonBytes({ code: 'BODY_TOO_LARGE', message: 'too large', diagnostics: { ...diag, responseBytes: 2 } }))]);
+  };
+  const sdk = client(transport);
+  const carries = (error: unknown): boolean => error instanceof Ja3ProxyTransportError && Object.isFrozen(error) && Object.isFrozen(error.references) && error.references?.traceId === 'trace-1';
+  try {
+    const exchange = await sdk.stream({ ...target, observer });
+    const reader = exchange.body.getReader();
+    await reader.read();
+    const streamed = await reader.read().then(() => undefined, (error: unknown) => error);
+    assert(carries(streamed));
+    const completion = await exchange.completion;
+    assert(!completion.ok && completion.error === streamed);
+
+    const failed = await sdk.tryRequest({ ...target, observer });
+    assert(!failed.ok && failed.error.code === 'BODY_TOO_LARGE' && carries(failed.error));
+    await assert.rejects(sdk.request({ ...target, observer }), carries);
+
+    const rejected = await sdk.tryRequest({ ...target, method: 'OPTIONS', observer });
+    assert(!rejected.ok && rejected.error.code === 'BUSY' && carries(rejected.error));
+
+    const pending = await sdk.stream({ ...target, method: 'DELETE', observer });
+    await pending.close();
+    const cancelled = await pending.completion;
+    assert(!cancelled.ok && cancelled.error.code === 'CANCELLED' && carries(cancelled.error));
+
+    const fetcher = sdk.createFetch({ partition: target.partition, connection, observer });
+    await assert.rejects(fetcher(target.url, { method: 'HEAD' }), (error: unknown) => carries(error) && (error as Ja3ProxyTransportError).code === 'TIMEOUT');
+
+    const before = observed;
+    const local = await sdk.tryRequest({ ...target, headerOrder: 'chrome' as never, observer });
+    assert(!local.ok && local.error.code === 'INVALID_REQUEST' && !('references' in local.error));
+    assert.equal(observed, before);
+  } finally { await sdk.close(); }
+});
+
+test('references are absent without an observer set and invalid sets are dropped without failing the request', async () => {
+  const transport: typeof fetch = async (input, init) => {
+    if (new URL(String(input)).pathname === '/capabilities') return Response.json(caps);
+    const envelope = await readEnvelope(init);
+    if (envelope.method === 'HEAD') return response(envelope, diag => [frame(4, jsonBytes({ code: 'TIMEOUT', message: 'timeout', diagnostics: diag }))], undefined, 204);
+    return response(envelope, diag => success(diag));
+  };
+  const sdk = client(transport);
+  try {
+    const plain = await sdk.request(target);
+    assert(!('references' in plain));
+    const exchange = await sdk.stream({ ...target, observer: () => ({ finish() { /* no references */ } }) });
+    assert(!('references' in exchange));
+    await exchange.close();
+    const fetched = await sdk.createFetch({ partition: target.partition, connection })(target.url);
+    assert.equal(getResponseReferences(fetched), undefined);
+    assert.equal(await fetched.text(), 'ok');
+    const failed = await sdk.tryRequest({ ...target, method: 'HEAD' });
+    assert(!failed.ok && failed.error.code === 'TIMEOUT' && !('references' in failed.error));
+
+    const many = Object.fromEntries(Array.from({ length: 17 }, (_, index) => [`k${index}`, 'v']));
+    const invalid: unknown[] = [
+      many, {}, ['a'], 'a', null, { '1a': 'v' }, { _a: 'v' }, { ['a'.repeat(65)]: 'v' }, { 'a b': 'v' },
+      { a: '' }, { a: 'v'.repeat(257) }, { a: 'line\nbreak' }, { a: '\u0000' }, { a: '\u007f' }, { a: '\u0085' },
+      { a: 1 }, { a: undefined }, { ok: 'v', bad: '\t' }, { get a(): string { throw new Error('observer-only'); } },
+    ];
+    for (const references of invalid) {
+      let finished = 0;
+      const result = await sdk.tryRequest({ ...target, observer: () => ({ references: references as never, finish() { finished++; } }) });
+      assert(result.ok, `request failed for ${inspect(references)}`);
+      assert(!('references' in result.value), `kept ${inspect(references)}`);
+      assert.equal(finished, 1);
+    }
+
+    const bounds = Object.fromEntries(Array.from({ length: 16 }, (_, index) => [`K${index}.x-_${'k'.repeat(58)}`.slice(0, 64), 'é'.repeat(256)]));
+    assert.deepEqual((await sdk.request({ ...target, observer: () => ({ references: bounds }) })).references, bounds);
+  } finally { await sdk.close(); }
+});
+
+test('references are snapshotted when the observer returns and client and request sets merge within the bound', async () => {
+  const transport: typeof fetch = async (input, init) => new URL(String(input)).pathname === '/capabilities' ? Response.json(caps) : response(await readEnvelope(init), diag => success(diag));
+  const shared: Record<string, string> = { scope: 'client', trace: 'client' };
+  const sdk = new Ja3ProxyClient({ baseUrl: 'http://service.invalid/', token, transport, maxResponseBytes: 1024, observer: () => ({ references: shared }) });
+  try {
+    const mutable: Record<string, string> = { trace: 'request' };
+    const result = await sdk.request({ ...target, observer: () => ({ references: mutable, run(operation) { mutable.trace = 'late'; shared.scope = 'late'; return operation(); } }) });
+    assert.deepEqual(result.references, { scope: 'client', trace: 'request' });
+    assert(Object.isFrozen(result.references));
+    assert.throws(() => { (result.references as Record<string, string>).trace = 'changed'; }, TypeError);
+
+    shared.scope = 'client';
+    const overflow = Object.fromEntries(Array.from({ length: 15 }, (_, index) => [`r${index}`, 'v']));
+    assert.deepEqual((await sdk.request({ ...target, observer: () => ({ references: overflow }) })).references, shared);
   } finally { await sdk.close(); }
 });

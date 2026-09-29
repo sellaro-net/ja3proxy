@@ -1,17 +1,19 @@
 import { Admission, Deadline, Lifetime } from './concurrency.js';
-import { localError, safeError } from './errors.js';
+import { localError, safeError, withReferences } from './errors.js';
 import { validatePartition } from './service.js';
 import type { SessionHandle } from './sessions.js';
-import type { ExchangeObservation, ExchangeObserver, ExchangeStart, ExternalSessionOptions, FetchObserver, FetchOptions, Ja3Diagnostics, Ja3HeaderOrder, RequestOptions, Result, ScopedFetch, SessionRequestOptions, StreamingResponse } from './types.js';
+import type { ExchangeObservation, ExchangeObserver, ExchangeReferences, ExchangeStart, ExternalSessionOptions, FetchObserver, FetchOptions, Ja3Diagnostics, Ja3HeaderOrder, RequestOptions, Result, ScopedFetch, SessionRequestOptions, StreamingResponse } from './types.js';
 
-const completions = new WeakMap<Response, Promise<Result<Ja3Diagnostics>>>();
-export function getResponseCompletion(response: Response): Promise<Result<Ja3Diagnostics>> | undefined { return completions.get(response); }
-function attachCompletion(response: Response, completion: Promise<Result<Ja3Diagnostics>>, url: string): Response {
-  completions.set(response, completion);
+const exchanges = new WeakMap<Response, StreamingResponse>();
+export function getResponseCompletion(response: Response): Promise<Result<Ja3Diagnostics>> | undefined { return exchanges.get(response)?.completion; }
+/** Observer-supplied references of the attempt behind an SDK fetch response; `undefined` otherwise. */
+export function getResponseReferences(response: Response): ExchangeReferences | undefined { return exchanges.get(response)?.references; }
+function attachExchange(response: Response, exchange: StreamingResponse, url: string): Response {
+  exchanges.set(response, exchange);
   Object.defineProperty(response, 'url', { value: url, configurable: true });
   Object.defineProperty(response, 'clone', {
     configurable: true,
-    value: () => attachCompletion(Response.prototype.clone.call(response), completion, url),
+    value: () => attachExchange(Response.prototype.clone.call(response), exchange, url),
   });
   return response;
 }
@@ -52,11 +54,11 @@ export async function fetchResponse(input: string | URL | Request, init: Request
       if (!result.ok) throw result.error;
     }
     const response = new Response(noBody ? null : exchange.body, { status: exchange.metadata.status, headers: exchange.metadata.headers });
-    return attachCompletion(response, exchange.completion, request.url);
+    return attachExchange(response, exchange, request.url);
   } catch (error) {
     if (exchange) await exchange.close();
     else if (request.body && !request.body.locked) void request.body.cancel().catch(() => undefined);
-    throw safeError(error);
+    throw withReferences(safeError(error), exchange?.references);
   }
 }
 export interface FetchHost {
